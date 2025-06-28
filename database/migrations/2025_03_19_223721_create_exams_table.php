@@ -1,0 +1,35 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('exams', function (Blueprint $table) {
+            $table->id('exam_id');
+            $table->string('type'); // final/mid
+            $table->string('course_name');
+            $table->string('dept');
+            $table->string('semester');
+            $table->string('level');
+            $table->string('doctor');
+            $table->string('pdf');
+            $table->year('year');
+            $table->timestamps();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('exams');
+    }
+};
