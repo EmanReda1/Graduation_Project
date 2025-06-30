@@ -8,6 +8,8 @@ use App\Models\Student;
 use App\Models\RetrieveRequest;
 use App\Models\Project;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
 
 class BookRequestController extends Controller
 {
@@ -77,27 +79,56 @@ class BookRequestController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
+
     public function store(Request $request)
     {
-        $request->validate([
-            'student_id' => 'required|exists:students,student_id',
-            'book_id' => 'required|exists:books,book_id',
-            'type' => 'required|in:reading,borrowing',
-            'notes' => 'nullable|string',
-        ]);
+        Log::info('Book request POST received.');
+        Log::info('Request data: ' . json_encode($request->all()));
 
-        $bookRequest = new BookRequest();
-        $bookRequest->student_id = $request->student_id;
-        $bookRequest->book_id = $request->book_id;
-        $bookRequest->type = $request->type;
-        $bookRequest->date_of_request = now();
-        $bookRequest->status = 'pending';
-        $bookRequest->notes = $request->notes;
-        $bookRequest->save();
+        try {
+            $request->validate([
+                'student_id' => 'required|exists:students,student_id',
+                'book_id' => 'required|exists:books,book_id',
+                'type' => 'required|in:reading,borrowing',
+                'notes' => 'nullable|string',
+            ]);
 
-        return redirect()->route('book-requests.index')
-            ->with('success', 'تم إنشاء طلب الكتاب بنجاح.');
+            $bookRequest = new BookRequest();
+            $bookRequest->student_id = $request->student_id;
+            $bookRequest->book_id = $request->book_id;
+            $bookRequest->type = $request->type;
+            $bookRequest->date_of_request = now();
+            $bookRequest->status = 'pending';
+            $bookRequest->notes = $request->notes;
+            $bookRequest->save();
+
+            Log::info('Book request saved successfully.');
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'تم إنشاء طلب الكتاب بنجاح.',
+                'data' => $bookRequest
+            ], 201);
+
+        } catch (ValidationException $e) { // استخدمي ValidationException مباشرة بعد الاستيراد
+            Log::error('Validation Error for Book Request: ' . $e->getMessage());
+            Log::error('Validation Errors: ' . json_encode($e->errors()));
+            return response()->json([
+                'status' => 'error',
+                'message' => 'خطأ في التحقق من البيانات',
+                'errors' => $e->errors()
+            ], 422);
+
+        } catch (\Exception $e) {
+            Log::error('Error saving book request: ' . $e->getMessage());
+            Log::error('Stack trace: ' . $e->getTraceAsString());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'حدث خطأ غير متوقع في إرسال الطلب'
+            ], 500);
+        }
     }
+
 
     /**
      * Display the specified book request.
