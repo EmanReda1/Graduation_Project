@@ -22,10 +22,9 @@ class BookRequestController extends Controller
      */
     public function store(Request $request)
     {
-        // **الخطوة 1: عرض بيانات الطلب الواردة**
-        dd($request->all());
+         Log::info("Book request POST received.");
+        Log::info("Request data: " . json_encode($request->all()));
 
-        // الكود التالي لن يتم تنفيذه بعد dd()، لكننا نتركه هنا للرجوع إليه لاحقاً
         try {
             $request->validate([
                 "student_id" => "required|exists:students,student_id",
@@ -66,130 +65,6 @@ class BookRequestController extends Controller
             return response()->json([
                 "status" => "error",
                 "message" => "حدث خطأ غير متوقع في إرسال الطلب"
-            ], 500);
-        }
-    }
-
-
-    /**
-     * Get student's book requests
-     *
-     * @param Request $request
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function index(Request $request)
-    {
-        try {
-            $student = JWTAuth::parseToken()->authenticate();
-
-            $query = BookRequest::where('student_id', $student->student_id)
-                ->with(['book:book_id,book_name,author,image']);
-
-            // Apply filters
-            if ($request->filled('status')) {
-                $query->where('status', $request->status);
-            }
-
-            if ($request->filled('type')) {
-                $query->where('type', $request->type);
-            }
-
-            // Pagination
-            $perPage = $request->get('per_page', 10);
-            $requests = $query->orderBy('date_of_request', 'desc')->paginate($perPage);
-
-            $requestsData = $requests->getCollection()->map(function($bookRequest) {
-                return [
-                    'request_id' => $bookRequest->request_id,
-                    'book' => [
-                        'book_id' => $bookRequest->book->book_id,
-                        'book_name' => $bookRequest->book->book_name,
-                        'author' => $bookRequest->book->author,
-                        'image' => $bookRequest->book->image ? asset($bookRequest->book->image) : null
-                    ],
-                    'type' => $bookRequest->type,
-                    'status' => $bookRequest->status,
-                    'date_of_request' => $bookRequest->date_of_request,
-                    'notes' => $bookRequest->notes,
-                    'created_at' => $bookRequest->created_at
-                ];
-            });
-
-            return response()->json([
-                'status' => 'success',
-                'data' => [
-                    'requests' => $requestsData,
-                    'pagination' => [
-                        'current_page' => $requests->currentPage(),
-                        'total_pages' => $requests->lastPage(),
-                        'total_items' => $requests->total(),
-                        'per_page' => $requests->perPage(),
-                        'has_next' => $requests->hasMorePages(),
-                        'has_previous' => $requests->currentPage() > 1
-                    ]
-                ]
-            ]);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'حدث خطأ في جلب الطلبات'
-            ], 500);
-        }
-    }
-
-    /**
-     * Get specific book request details
-     *
-     * @param int $id
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function show($id)
-    {
-        try {
-            $student = JWTAuth::parseToken()->authenticate();
-
-            $bookRequest = BookRequest::where('request_id', $id)
-                ->where('student_id', $student->student_id)
-                ->with(['book', 'retrieveRequest'])
-                ->first();
-
-            if (!$bookRequest) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'الطلب غير موجود'
-                ], 404);
-            }
-
-            return response()->json([
-                'status' => 'success',
-                'data' => [
-                    'request_id' => $bookRequest->request_id,
-                    'book' => [
-                        'book_id' => $bookRequest->book->book_id,
-                        'book_name' => $bookRequest->book->book_name,
-                        'author' => $bookRequest->book->author,
-                        'image' => $bookRequest->book->image ? asset($bookRequest->book->image) : null,
-                        'status' => $bookRequest->book->status
-                    ],
-                    'type' => $bookRequest->type,
-                    'status' => $bookRequest->status,
-                    'date_of_request' => $bookRequest->date_of_request,
-                    'notes' => $bookRequest->notes,
-                    'retrieve_request' => $bookRequest->retrieveRequest ? [
-                        'retrieve_id' => $bookRequest->retrieveRequest->retrieve_id,
-                        'request_date' => $bookRequest->retrieveRequest->request_date,
-                        'status' => $bookRequest->retrieveRequest->status
-                    ] : null,
-                    'created_at' => $bookRequest->created_at,
-                    'updated_at' => $bookRequest->updated_at
-                ]
-            ]);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'حدث خطأ في جلب تفاصيل الطلب'
             ], 500);
         }
     }
