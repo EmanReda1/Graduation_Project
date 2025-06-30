@@ -9,6 +9,8 @@ use App\Models\RetrieveRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Tymon\JWTAuth\Facades\JWTAuth;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
 
 class BookRequestController extends Controller
 {
@@ -20,82 +22,54 @@ class BookRequestController extends Controller
      */
     public function store(Request $request)
     {
+        // **الخطوة 1: عرض بيانات الطلب الواردة**
+        dd($request->all());
+
+        // الكود التالي لن يتم تنفيذه بعد dd()، لكننا نتركه هنا للرجوع إليه لاحقاً
         try {
-            $student = JWTAuth::parseToken()->authenticate();
-            
-            $validator = Validator::make($request->all(), [
-                'book_id' => 'required|exists:books,book_id',
-                'type' => 'required|in:reading,borrowing',
-                'notes' => 'nullable|string|max:500'
+            $request->validate([
+                "student_id" => "required|exists:students,student_id",
+                "book_id" => "required|exists:books,book_id",
+                "type" => "required|in:reading,borrowing",
+                "notes" => "nullable|string",
             ]);
 
-            if ($validator->fails()) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'بيانات غير صحيحة',
-                    'errors' => $validator->errors()
-                ], 422);
-            }
+            $bookRequest = new BookRequest();
+            $bookRequest->student_id = $request->student_id;
+            $bookRequest->book_id = $request->book_id;
+            $bookRequest->type = $request->type;
+            $bookRequest->date_of_request = now();
+            $bookRequest->status = "pending";
+            $bookRequest->notes = $request->notes;
+            $bookRequest->save();
 
-            // Check if book exists and is available
-            $book = Book::find($request->book_id);
-            if (!$book) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'الكتاب غير موجود'
-                ], 404);
-            }
-
-            if ($book->status !== 'available') {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'الكتاب غير متاح حالياً'
-                ], 400);
-            }
-
-            // Check if student already has a pending request for this book
-            $existingRequest = BookRequest::where('student_id', $student->student_id)
-                ->where('book_id', $request->book_id)
-                ->where('status', 'pending')
-                ->first();
-
-            if ($existingRequest) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'لديك طلب معلق بالفعل لهذا الكتاب'
-                ], 400);
-            }
-
-            // Create the request
-            $bookRequest = BookRequest::create([
-                'student_id' => $student->student_id,
-                'book_id' => $request->book_id,
-                'type' => $request->type,
-                'date_of_request' => now(),
-                'status' => 'pending',
-                'notes' => $request->notes
-            ]);
+            Log::info("Book request saved successfully.");
 
             return response()->json([
-                'status' => 'success',
-                'message' => 'تم إرسال الطلب بنجاح',
-                'data' => [
-                    'request_id' => $bookRequest->request_id,
-                    'book_id' => $bookRequest->book_id,
-                    'type' => $bookRequest->type,
-                    'status' => $bookRequest->status,
-                    'date_of_request' => $bookRequest->date_of_request,
-                    'notes' => $bookRequest->notes
-                ]
+                "status" => "success",
+                "message" => "تم إنشاء طلب الكتاب بنجاح.",
+                "data" => $bookRequest
             ], 201);
 
-        } catch (\Exception $e) {
+        } catch (ValidationException $e) {
+            Log::error("Validation Error for Book Request: " . $e->getMessage());
+            Log::error("Validation Errors: " . json_encode($e->errors()));
             return response()->json([
-                'status' => 'error',
-                'message' => 'حدث خطأ في إرسال الطلب'
+                "status" => "error",
+                "message" => "خطأ في التحقق من البيانات",
+                "errors" => $e->errors()
+            ], 422);
+
+        } catch (\Exception $e) {
+            Log::error("Error saving book request: " . $e->getMessage());
+            Log::error("Stack trace: " . $e->getTraceAsString());
+            return response()->json([
+                "status" => "error",
+                "message" => "حدث خطأ غير متوقع في إرسال الطلب"
             ], 500);
         }
     }
+
 
     /**
      * Get student's book requests
@@ -107,7 +81,7 @@ class BookRequestController extends Controller
     {
         try {
             $student = JWTAuth::parseToken()->authenticate();
-            
+
             $query = BookRequest::where('student_id', $student->student_id)
                 ->with(['book:book_id,book_name,author,image']);
 
@@ -174,7 +148,7 @@ class BookRequestController extends Controller
     {
         try {
             $student = JWTAuth::parseToken()->authenticate();
-            
+
             $bookRequest = BookRequest::where('request_id', $id)
                 ->where('student_id', $student->student_id)
                 ->with(['book', 'retrieveRequest'])
@@ -231,7 +205,7 @@ class BookRequestController extends Controller
     {
         try {
             $student = JWTAuth::parseToken()->authenticate();
-            
+
             $validator = Validator::make($request->all(), [
                 'notes' => 'nullable|string|max:500'
             ]);
@@ -312,7 +286,7 @@ class BookRequestController extends Controller
     {
         try {
             $student = JWTAuth::parseToken()->authenticate();
-            
+
             $validator = Validator::make($request->all(), [
                 'notes' => 'nullable|string|max:500'
             ]);
@@ -392,7 +366,7 @@ class BookRequestController extends Controller
     {
         try {
             $student = JWTAuth::parseToken()->authenticate();
-            
+
             $bookRequest = BookRequest::where('request_id', $id)
                 ->where('student_id', $student->student_id)
                 ->where('status', 'pending')
@@ -430,7 +404,7 @@ class BookRequestController extends Controller
     {
         try {
             $student = JWTAuth::parseToken()->authenticate();
-            
+
             $borrowedBooks = BookRequest::where('student_id', $student->student_id)
                 ->where('type', 'borrowing')
                 ->where('status', 'approved')
@@ -445,7 +419,7 @@ class BookRequestController extends Controller
                 $borrowDate = $request->date_of_request;
                 $dueDate = $borrowDate->addDays(14); // Assuming 14 days borrowing period
                 $daysRemaining = now()->diffInDays($dueDate, false);
-                
+
                 return [
                     'request_id' => $request->request_id,
                     'book_id' => $request->book->book_id,
