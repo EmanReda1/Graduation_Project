@@ -16,10 +16,13 @@ return new class extends Migration
             $table->string('username');
             $table->string('fullname');
             $table->string('email');
+            $table->string('university_code');
+            $table->string('department');
             $table->string('password');
             $table->string('phone_no');
             $table->integer('level');
             $table->string('borrow_docs')->nullable();
+            $table->string('image')->nullable();
             $table->timestamps();
         });
     }

@@ -19,7 +19,7 @@ return new class extends Migration
             $table->string('semester');
             $table->string('level');
             $table->string('doctor');
-            $table->string('pdf');
+            $table->string('pdf')->nullable();
             $table->year('year');
             $table->timestamps();
         });
