@@ -9,6 +9,7 @@ use App\Models\Review;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Tymon\JWTAuth\Facades\JWTAuth;
+use Illuminate\Support\Facades\Log;
 
 class BookController extends Controller
 {
@@ -93,76 +94,87 @@ class BookController extends Controller
      * @return \Illuminate\Http\JsonResponse
      */
     public function show($id)
-    {
-         try {
-            // Attempt to get authenticated student for favorited status, but don\'t require it
-            $student = null;
-            try {
-                $student = JWTAuth::parseToken()->authenticate();
-            } catch (\Exception $e) {
-                // Token not provided or invalid, continue without student context
-            }
-
-            //$student = JWTAuth::parseToken()->authenticate();
-
-            $book = Book::find($id);
-
-            if (!$book) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'الكتاب غير موجود'
-                ], 404);
-            }
-
-            // Get reviews with student names
-            $reviews = Review::where('book_id', $id)
-                ->join('students', 'reviews.student_id', '=', 'students.student_id')
-                ->select('reviews.*', 'students.fullname as student_name')
-                ->orderBy('reviews.created_at', 'desc')
-                ->get()
-                ->map(function($review) {
-                    return [
-                        'review_id' => $review->review_id,
-                        'student_name' => $review->student_name,
-                        'rating' => $review->rating,
-                        'comment' => $review->comment,
-                        'created_at' => $review->created_at
-                    ];
-                });
-
-            return response()->json([
-                'status' => 'success',
-                'data' => [
-                    'book_id' => $book->book_id,
-                    'book_name' => $book->book_name,
-                    'author' => $book->author,
-                    'isbn_no' => $book->isbn_no,
-                    'book_no' => $book->book_no,
-                    'price' => $book->price,
-                    'source' => $book->source,
-                    'summary' => $book->summary,
-                    'department' => $book->department,
-                    'status' => $book->status,
-                    'place' => $book->place,
-                    'shelf_no' => $book->shelf_no,
-                    'size' => $book->size,
-                    'release_date' => $book->release_date,
-                    'library_date' => $book->library_date,
-                    'image' => $book->image ? asset($book->image) : null,
-                    'is_favorited' => $this->isBookFavorited($book->book_id, $student->student_id),
-                    'average_rating' => $this->getAverageRating($book->book_id),
-                    'reviews_count' => $this->getReviewsCount($book->book_id),
-                    'reviews' => $reviews
-                ]
-            ]);
-
+{
+    try {
+        // Attempt to get authenticated student for favorited status, but don\'t require it
+        $student = null;
+        try {
+            $student = JWTAuth::parseToken()->authenticate();
         } catch (\Exception $e) {
+            // Token not provided or invalid, continue without student context
+        }
+
+        // Log before finding the book
+        Log::info('Attempting to find book with ID: ' . $id);
+
+        $book = Book::find($id);
+
+        if (!$book) {
+            // Log if book not found
+            Log::warning('Book not found with ID: ' . $id);
             return response()->json([
                 'status' => 'error',
-                'message' => 'حدث خطأ في جلب تفاصيل الكتاب'
-            ], 500);
+                'message' => 'الكتاب غير موجود'
+            ], 404);
         }
+
+        // Log after finding the book
+        Log::info('Book found: ' . $book->book_name);
+
+        // Get reviews with student names
+        $reviews = Review::where('book_id', $id)
+            ->join('students', 'reviews.student_id', '=', 'students.student_id')
+            ->select('reviews.*', 'students.fullname as student_name')
+            ->orderBy('reviews.created_at', 'desc')
+            ->get()
+            ->map(function($review) {
+                return [
+                    'review_id' => $review->review_id,
+                    'student_name' => $review->student_name,
+                    'rating' => $review->rating,
+                    'comment' => $review->comment,
+                    'created_at' => $review->created_at
+                ];
+            });
+
+        // Log before returning response
+        Log::info('Returning book details for ID: ' . $id);
+
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'book_id' => $book->book_id,
+                'book_name' => $book->book_name,
+                'author' => $book->author,
+                'isbn_no' => $book->isbn_no,
+                'book_no' => $book->book_no,
+                'price' => $book->price,
+                'source' => $book->source,
+                'summary' => $book->summary,
+                'department' => $book->department,
+                'status' => $book->status,
+                'place' => $book->place,
+                'shelf_no' => $book->shelf_no,
+                'size' => $book->size,
+                'release_date' => $book->release_date,
+                'library_date' => $book->library_date,
+                'image' => $book->image ? asset($book->image) : null,
+                'is_favorited' => $student ? $this->isBookFavorited($book->book_id, $student->student_id) : false,
+                'average_rating' => $this->getAverageRating($book->book_id),
+                'reviews_count' => $this->getReviewsCount($book->book_id),
+                'reviews' => $reviews
+            ]
+        ]);
+
+    } catch (\Exception $e) {
+        // Log the actual exception message
+        Log::error('Error fetching book details: ' . $e->getMessage() . ' Stack: ' . $e->getTraceAsString());
+        return response()->json([
+            'status' => 'error',
+            'message' => 'حدث خطأ في جلب تفاصيل الكتاب'
+        ], 500);
     }
+}
 
     /**
      * Get available books only
