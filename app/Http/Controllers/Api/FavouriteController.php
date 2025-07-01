@@ -22,30 +22,33 @@ class FavouriteController extends Controller
 
     public function index(Request $request)
     {
-        Log::info("بدء جلب الكتب المفضلة.");
+
+
+        dd("بدء تنفيذ دالة index في FavouriteController"); // يمكنكِ تفعيل هذا السطر للتأكد من وصول الطلب هنا
 
         try {
-            // محاولة المصادقة على الطالب
+            // 1. التحقق من مصادقة الطالب
             $student = JWTAuth::parseToken()->authenticate();
-            Log::info("تم المصادقة على الطالب بنجاح. Student ID: " . $student->student_id);
+            // dd($student); // عرض بيانات الطالب بعد المصادقة
 
             $perPage = $request->get("per_page", 15);
-            Log::info("عدد العناصر لكل صفحة (per_page): " . $perPage);
+            // dd("per_page: " . $perPage); // عرض قيمة per_page
 
-            // جلب المفضلة مع علاقة الكتاب
+            // 2. جلب المفضلة مع علاقة الكتاب
             $favorites = Favourite::where("student_id", $student->student_id)
                 ->with(["book:book_id,book_name,author,image,status,department"])
                 ->orderBy("created_at", "desc")
                 ->paginate($perPage);
 
-            Log::info("تم جلب المفضلة بنجاح. عدد العناصر: " . $favorites->total());
+            // dd($favorites); // عرض كائن الـ Paginator بعد جلب المفضلة
 
-            // تحويل البيانات إلى التنسيق المطلوب
+            // 3. تحويل البيانات إلى التنسيق المطلوب
             $favoritesData = $favorites->getCollection()->map(function($favorite) {
+                // dd($favorite); // عرض كل عنصر مفضل قبل التحويل
                 // تحقق من وجود الكتاب قبل محاولة الوصول إلى خصائصه
                 if (!$favorite->book) {
-                    Log::warning("كتاب غير موجود للمفضلة ID: " . $favorite->favorite_id);
-                    return null; // أو يمكنكِ إرجاع بيانات افتراضية
+                    // dd("كتاب غير موجود للمفضلة ID: " . $favorite->favorite_id); // إذا كان الكتاب غير موجود
+                    return null;
                 }
                 return [
                     "favorite_id" => $favorite->favorite_id,
@@ -59,9 +62,9 @@ class FavouriteController extends Controller
                     ],
                     "created_at" => $favorite->created_at
                 ];
-            })->filter(); // إزالة أي عناصر null إذا تم إرجاعها
+            })->filter();
 
-            Log::info("تم تحويل بيانات المفضلة بنجاح.");
+            // dd($favoritesData); // عرض البيانات بعد التحويل وقبل الإرجاع
 
             return response()->json([
                 "status" => "success",
@@ -79,17 +82,14 @@ class FavouriteController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            // تسجيل الخطأ كاملاً
-            Log::error("خطأ في جلب الكتب المفضلة: " . $e->getMessage());
-            Log::error("ملف الخطأ: " . $e->getFile() . " في السطر: " . $e->getLine());
-            Log::error("تتبع الخطأ: " . $e->getTraceAsString());
-
-            return response()->json([
-                "status" => "error",
-                "message" => "حدث خطأ في جلب الكتب المفضلة. يرجى مراجعة السجلات."
-            ], 500);
+            // إذا حدث أي خطأ، اعرض تفاصيله كاملة
+            dd($e); // هذا سيعرض لكِ كل تفاصيل الـ Exception (الرسالة، الملف، السطر، تتبع الخطأ)
         }
-    }
+
+}
+
+
+
 
 
     /**
