@@ -24,12 +24,12 @@ class FavouriteController extends Controller
     {
 
 
-        dd("بدء تنفيذ دالة index في FavouriteController"); // يمكنكِ تفعيل هذا السطر للتأكد من وصول الطلب هنا
+      //  dd("بدء تنفيذ دالة index في FavouriteController"); // done the problem is not here
 
         try {
             // 1. التحقق من مصادقة الطالب
             $student = JWTAuth::parseToken()->authenticate();
-            // dd($student); // عرض بيانات الطالب بعد المصادقة
+            dd($student); // عرض بيانات الطالب بعد المصادقة
 
             $perPage = $request->get("per_page", 15);
             // dd("per_page: " . $perPage); // عرض قيمة per_page
@@ -98,7 +98,7 @@ class FavouriteController extends Controller
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
-   /* public function store(Request $request)
+    public function store(Request $request)
     {
         try {
             $student = JWTAuth::parseToken()->authenticate();
@@ -157,7 +157,7 @@ class FavouriteController extends Controller
                 'message' => 'حدث خطأ في إضافة الكتاب للمفضلة'
             ], 500);
         }
-    }*/
+    }
 
     /**
      * Remove book from favorites
