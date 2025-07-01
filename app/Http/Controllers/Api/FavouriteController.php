@@ -8,6 +8,8 @@ use App\Models\Book;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Tymon\JWTAuth\Facades\JWTAuth;
+use Illuminate\Support\Facades\Log;
+
 
 class FavouriteController extends Controller
 {
@@ -17,55 +19,78 @@ class FavouriteController extends Controller
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
+
     public function index(Request $request)
     {
+        Log::info("بدء جلب الكتب المفضلة.");
+
         try {
+            // محاولة المصادقة على الطالب
             $student = JWTAuth::parseToken()->authenticate();
-            
-            $perPage = $request->get('per_page', 15);
-            
-            $favorites = Favourite::where('student_id', $student->student_id)
-                ->with(['book:book_id,book_name,author,image,status,department'])
-                ->orderBy('created_at', 'desc')
+            Log::info("تم المصادقة على الطالب بنجاح. Student ID: " . $student->student_id);
+
+            $perPage = $request->get("per_page", 15);
+            Log::info("عدد العناصر لكل صفحة (per_page): " . $perPage);
+
+            // جلب المفضلة مع علاقة الكتاب
+            $favorites = Favourite::where("student_id", $student->student_id)
+                ->with(["book:book_id,book_name,author,image,status,department"])
+                ->orderBy("created_at", "desc")
                 ->paginate($perPage);
 
+            Log::info("تم جلب المفضلة بنجاح. عدد العناصر: " . $favorites->total());
+
+            // تحويل البيانات إلى التنسيق المطلوب
             $favoritesData = $favorites->getCollection()->map(function($favorite) {
+                // تحقق من وجود الكتاب قبل محاولة الوصول إلى خصائصه
+                if (!$favorite->book) {
+                    Log::warning("كتاب غير موجود للمفضلة ID: " . $favorite->favorite_id);
+                    return null; // أو يمكنكِ إرجاع بيانات افتراضية
+                }
                 return [
-                    'favorite_id' => $favorite->favorite_id,
-                    'book' => [
-                        'book_id' => $favorite->book->book_id,
-                        'book_name' => $favorite->book->book_name,
-                        'author' => $favorite->book->author,
-                        'department' => $favorite->book->department,
-                        'status' => $favorite->book->status,
-                        'image' => $favorite->book->image ? asset($favorite->book->image) : null
+                    "favorite_id" => $favorite->favorite_id,
+                    "book" => [
+                        "book_id" => $favorite->book->book_id,
+                        "book_name" => $favorite->book->book_name,
+                        "author" => $favorite->book->author,
+                        "department" => $favorite->book->department,
+                        "status" => $favorite->book->status,
+                        "image" => $favorite->book->image ? asset($favorite->book->image) : null
                     ],
-                    'created_at' => $favorite->created_at
+                    "created_at" => $favorite->created_at
                 ];
-            });
+            })->filter(); // إزالة أي عناصر null إذا تم إرجاعها
+
+            Log::info("تم تحويل بيانات المفضلة بنجاح.");
 
             return response()->json([
-                'status' => 'success',
-                'data' => [
-                    'favorites' => $favoritesData,
-                    'pagination' => [
-                        'current_page' => $favorites->currentPage(),
-                        'total_pages' => $favorites->lastPage(),
-                        'total_items' => $favorites->total(),
-                        'per_page' => $favorites->perPage(),
-                        'has_next' => $favorites->hasMorePages(),
-                        'has_previous' => $favorites->currentPage() > 1
+                "status" => "success",
+                "data" => [
+                    "favorites" => $favoritesData,
+                    "pagination" => [
+                        "current_page" => $favorites->currentPage(),
+                        "total_pages" => $favorites->lastPage(),
+                        "total_items" => $favorites->total(),
+                        "per_page" => $favorites->perPage(),
+                        "has_next" => $favorites->hasMorePages(),
+                        "has_previous" => $favorites->currentPage() > 1
                     ]
                 ]
             ]);
 
         } catch (\Exception $e) {
+            // تسجيل الخطأ كاملاً
+            Log::error("خطأ في جلب الكتب المفضلة: " . $e->getMessage());
+            Log::error("ملف الخطأ: " . $e->getFile() . " في السطر: " . $e->getLine());
+            Log::error("تتبع الخطأ: " . $e->getTraceAsString());
+
             return response()->json([
-                'status' => 'error',
-                'message' => 'حدث خطأ في جلب الكتب المفضلة'
+                "status" => "error",
+                "message" => "حدث خطأ في جلب الكتب المفضلة. يرجى مراجعة السجلات."
             ], 500);
         }
     }
+
 
     /**
      * Add book to favorites
@@ -73,11 +98,11 @@ class FavouriteController extends Controller
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
-    public function store(Request $request)
+   /* public function store(Request $request)
     {
         try {
             $student = JWTAuth::parseToken()->authenticate();
-            
+
             $validator = Validator::make($request->all(), [
                 'book_id' => 'required|exists:books,book_id'
             ]);
@@ -132,7 +157,7 @@ class FavouriteController extends Controller
                 'message' => 'حدث خطأ في إضافة الكتاب للمفضلة'
             ], 500);
         }
-    }
+    }*/
 
     /**
      * Remove book from favorites
@@ -144,7 +169,7 @@ class FavouriteController extends Controller
     {
         try {
             $student = JWTAuth::parseToken()->authenticate();
-            
+
             $favorite = Favourite::where('student_id', $student->student_id)
                 ->where('book_id', $bookId)
                 ->first();
@@ -181,7 +206,7 @@ class FavouriteController extends Controller
     {
         try {
             $student = JWTAuth::parseToken()->authenticate();
-            
+
             $validator = Validator::make($request->all(), [
                 'book_id' => 'required|exists:books,book_id'
             ]);
@@ -240,7 +265,7 @@ class FavouriteController extends Controller
     {
         try {
             $student = JWTAuth::parseToken()->authenticate();
-            
+
             $isFavorited = Favourite::where('student_id', $student->student_id)
                 ->where('book_id', $bookId)
                 ->exists();
@@ -270,7 +295,7 @@ class FavouriteController extends Controller
     {
         try {
             $student = JWTAuth::parseToken()->authenticate();
-            
+
             $count = Favourite::where('student_id', $student->student_id)->count();
 
             return response()->json([
@@ -297,7 +322,7 @@ class FavouriteController extends Controller
     {
         try {
             $student = JWTAuth::parseToken()->authenticate();
-            
+
             $deletedCount = Favourite::where('student_id', $student->student_id)->delete();
 
             return response()->json([
