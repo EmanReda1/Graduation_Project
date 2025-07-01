@@ -22,71 +22,53 @@ class FavouriteController extends Controller
 
     public function index(Request $request)
     {
-
-
-      //  dd("بدء تنفيذ دالة index في FavouriteController"); // done the problem is not here
-
         try {
-            // 1. التحقق من مصادقة الطالب
             $student = JWTAuth::parseToken()->authenticate();
-            dd($student); // عرض بيانات الطالب بعد المصادقة
 
-            $perPage = $request->get("per_page", 15);
-            // dd("per_page: " . $perPage); // عرض قيمة per_page
+            $perPage = $request->get('per_page', 15);
 
-            // 2. جلب المفضلة مع علاقة الكتاب
-            $favorites = Favourite::where("student_id", $student->student_id)
-                ->with(["book:book_id,book_name,author,image,status,department"])
-                ->orderBy("created_at", "desc")
+            $favorites = Favourite::where('student_id', $student->student_id)
+                ->with(['book:book_id,book_name,author,image,status,department'])
+                ->orderBy('created_at', 'desc')
                 ->paginate($perPage);
 
-            // dd($favorites); // عرض كائن الـ Paginator بعد جلب المفضلة
-
-            // 3. تحويل البيانات إلى التنسيق المطلوب
             $favoritesData = $favorites->getCollection()->map(function($favorite) {
-                // dd($favorite); // عرض كل عنصر مفضل قبل التحويل
-                // تحقق من وجود الكتاب قبل محاولة الوصول إلى خصائصه
-                if (!$favorite->book) {
-                    // dd("كتاب غير موجود للمفضلة ID: " . $favorite->favorite_id); // إذا كان الكتاب غير موجود
-                    return null;
-                }
                 return [
-                    "favorite_id" => $favorite->favorite_id,
-                    "book" => [
-                        "book_id" => $favorite->book->book_id,
-                        "book_name" => $favorite->book->book_name,
-                        "author" => $favorite->book->author,
-                        "department" => $favorite->book->department,
-                        "status" => $favorite->book->status,
-                        "image" => $favorite->book->image ? asset($favorite->book->image) : null
+                    'favorite_id' => $favorite->favorite_id,
+                    'book' => [
+                        'book_id' => $favorite->book->book_id,
+                        'book_name' => $favorite->book->book_name,
+                        'author' => $favorite->book->author,
+                        'department' => $favorite->book->department,
+                        'status' => $favorite->book->status,
+                        'image' => $favorite->book->image ? asset($favorite->book->image) : null
                     ],
-                    "created_at" => $favorite->created_at
+                    'created_at' => $favorite->created_at
                 ];
-            })->filter();
-
-            // dd($favoritesData); // عرض البيانات بعد التحويل وقبل الإرجاع
+            });
 
             return response()->json([
-                "status" => "success",
-                "data" => [
-                    "favorites" => $favoritesData,
-                    "pagination" => [
-                        "current_page" => $favorites->currentPage(),
-                        "total_pages" => $favorites->lastPage(),
-                        "total_items" => $favorites->total(),
-                        "per_page" => $favorites->perPage(),
-                        "has_next" => $favorites->hasMorePages(),
-                        "has_previous" => $favorites->currentPage() > 1
+                'status' => 'success',
+                'data' => [
+                    'favorites' => $favoritesData,
+                    'pagination' => [
+                        'current_page' => $favorites->currentPage(),
+                        'total_pages' => $favorites->lastPage(),
+                        'total_items' => $favorites->total(),
+                        'per_page' => $favorites->perPage(),
+                        'has_next' => $favorites->hasMorePages(),
+                        'has_previous' => $favorites->currentPage() > 1
                     ]
                 ]
             ]);
 
         } catch (\Exception $e) {
-            // إذا حدث أي خطأ، اعرض تفاصيله كاملة
-            dd($e); // هذا سيعرض لكِ كل تفاصيل الـ Exception (الرسالة، الملف، السطر، تتبع الخطأ)
+            return response()->json([
+                'status' => 'error',
+                'message' => 'حدث خطأ في جلب الكتب المفضلة'
+            ], 500);
         }
-
-}
+    }
 
 
 
