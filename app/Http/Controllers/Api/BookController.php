@@ -94,8 +94,16 @@ class BookController extends Controller
      */
     public function show($id)
     {
-        try {
-            $student = JWTAuth::parseToken()->authenticate();
+         try {
+            // Attempt to get authenticated student for favorited status, but don\'t require it
+            $student = null;
+            try {
+                $student = JWTAuth::parseToken()->authenticate();
+            } catch (\Exception $e) {
+                // Token not provided or invalid, continue without student context
+            }
+
+            //$student = JWTAuth::parseToken()->authenticate();
 
             $book = Book::find($id);
 
