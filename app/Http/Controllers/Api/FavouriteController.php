@@ -25,8 +25,14 @@ class FavouriteController extends Controller
     public function index(Request $request)
     {
         try {
-             $student = JWTAuth::parseToken()->authenticate();
-             dd($student);
+               $student = JWTAuth::parseToken()->authenticate();
+
+        if ($student) {
+            dd($student);
+        } else {
+            // إذا عادت authenticate() بـ false، اعرض رسالة توضيحية
+            dd("المصادقة فشلت: لم يتم العثور على طالب صالح لهذا التوكن.");
+        }
 
             $perPage = $request->get('per_page', 15);
 
