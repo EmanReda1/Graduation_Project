@@ -7,6 +7,7 @@ use App\Models\Project;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Tymon\JWTAuth\Facades\JWTAuth;
+use Illuminate\Support\Facades\Log;
 
 class ProjectController extends Controller
 {
@@ -95,8 +96,17 @@ class ProjectController extends Controller
     public function show($id)
     {
         try {
+            // Attempt to get authenticated student for favorited status, but don\'t require it
+            // This block is added to mimic the BookController's optional authentication handling
+            $student = null;
+            try {
+                $student = JWTAuth::parseToken()->authenticate();
+            } catch (\Exception $e) {
+                // Token not provided or invalid, continue without student context
+            }
+
             $project = Project::find($id);
-            
+
             if (!$project) {
                 return response()->json([
                     'status' => 'error',
@@ -123,12 +133,16 @@ class ProjectController extends Controller
             ]);
 
         } catch (\Exception $e) {
+            // Log the actual exception message for debugging
+            Log::error('Error fetching project details: ' . $e->getMessage() . ' Stack: ' . $e->getTraceAsString());
             return response()->json([
                 'status' => 'error',
                 'message' => 'حدث خطأ في جلب تفاصيل المشروع'
             ], 500);
         }
     }
+
+
 
     /**
      * Get projects by department
@@ -137,7 +151,8 @@ class ProjectController extends Controller
      * @param string $department
      * @return \Illuminate\Http\JsonResponse
      */
-    public function byDepartment(Request $request, $department)
+
+     public function byDepartment(Request $request, $department)
     {
         $request->merge(['department' => $department]);
         return $this->index($request);
@@ -189,7 +204,7 @@ class ProjectController extends Controller
     {
         try {
             $perPage = $request->get('per_page', 10);
-            
+
             $projects = Project::orderBy('created_at', 'desc')->paginate($perPage);
 
             $projectsData = $projects->getCollection()->map(function($project) {
