@@ -143,7 +143,7 @@ class BookController extends Controller
         // Find book
         $book = Book::findOrFail($id);
 
-        // Validate request
+
         $validated = $request->validate([
             'book_name' => 'required|string|max:255',
             'author' => 'required|string|max:255',
