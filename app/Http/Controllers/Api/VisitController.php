@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
 use Tymon\JWTAuth\Facades\JWTAuth;
+use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 
 class VisitController extends Controller
@@ -112,12 +113,12 @@ class VisitController extends Controller
 
 
             // Get student from token
-            $student = null;
+             $student= Auth::guard('api')->user();
             try {
-               $student = JWTAuth::parseToken()->authenticate();
+               //$student = JWTAuth::parseToken()->authenticate();
                 if (!$student) {
                    $studentIdFromToken = JWTAuth::parseToken()->getPayload()->get("sub");
-                 dd("Student authenticated: " . ($student ? $student->username : "Not authenticated"));
+
 
                     if ($studentIdFromToken) {
                         $student = Student::find($studentIdFromToken);
