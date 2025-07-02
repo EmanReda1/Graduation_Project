@@ -113,7 +113,8 @@ class VisitController extends Controller
             try {
                // $student = JWTAuth::parseToken()->authenticate();
                 if (!$student) {
-                    $studentIdFromToken = JWTAuth::parseToken()->getPayload()->get("sub");
+                   // $studentIdFromToken = JWTAuth::parseToken()->getPayload()->get("sub");
+                   $studentIdFromToken = null;
                     if ($studentIdFromToken) {
                         $student = Student::find($studentIdFromToken);
                     }
