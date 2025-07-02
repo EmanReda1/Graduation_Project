@@ -24,6 +24,7 @@ class FavouriteController extends Controller
     {
         try {
             $student = JWTAuth::parseToken()->authenticate();
+            dd($student);
 
             $perPage = $request->get('per_page', 15);
 
@@ -63,6 +64,7 @@ class FavouriteController extends Controller
             ]);
 
         } catch (\Exception $e) {
+            dd($e);
             return response()->json([
                 'status' => 'error',
                 'message' => 'حدث خطأ في جلب الكتب المفضلة'
