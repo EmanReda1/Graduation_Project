@@ -111,7 +111,7 @@ class VisitController extends Controller
             // Get student from token
             $student = null;
             try {
-                $student = JWTAuth::parseToken()->authenticate();
+               // $student = JWTAuth::parseToken()->authenticate();
                 if (!$student) {
                     $studentIdFromToken = JWTAuth::parseToken()->getPayload()->get("sub");
                     if ($studentIdFromToken) {
