@@ -93,9 +93,17 @@ class ProjectController extends Controller
      * @param int $id
      * @return \Illuminate\Http\JsonResponse
      */
-         public function show($id)
+      public function show($id)
     {
         try {
+            // Attempt to get authenticated student for favorited status, but don\"t require it
+            $student = null;
+            try {
+                $student = JWTAuth::parseToken()->authenticate();
+            } catch (\Exception $e) {
+                // Token not provided or invalid, continue without student context
+            }
+
             $project = Project::find($id);
 
             if (!$project) {
@@ -103,6 +111,16 @@ class ProjectController extends Controller
                     'status' => 'error',
                     'message' => 'المشروع غير موجود'
                 ], 404);
+            }
+
+            // Check if 'image' attribute exists and is not null before using asset()
+            $imageUrl = null;
+            if (isset($project->image) && !empty($project->image)) {
+                try {
+                    $imageUrl = asset($project->image);
+                } catch (\Exception $e) {
+                    $imageUrl = null; // Fallback if asset() fails
+                }
             }
 
             return response()->json([
@@ -117,13 +135,15 @@ class ProjectController extends Controller
                     'supervisor' => $project->supervisor,
                     'project_date' => $project->project_date,
                     'summary' => $project->summary,
-                    'image' => $project->image ? asset($project->image) : null,
+                    'image' => $imageUrl, // Reverted to 'image'
                     'created_at' => $project->created_at,
                     'updated_at' => $project->updated_at
                 ]
             ]);
 
         } catch (\Exception $e) {
+            // Log the actual exception message for debugging
+            Log::error('Error fetching project details: ' . $e->getMessage() . ' Stack: ' . $e->getTraceAsString());
             return response()->json([
                 'status' => 'error',
                 'message' => 'حدث خطأ في جلب تفاصيل المشروع'
