@@ -26,7 +26,7 @@ class FavouriteController extends Controller
     {
         try {
             $studentId = JWTAuth::parseToken()->getPayload()->get("sub");
-             $student = App\Models\Student::find($studentId);
+             $student = \App\Models\Student::find($studentId);
            // $student = JWTAuth::parseToken()->authenticate();
              dd($student);
 
