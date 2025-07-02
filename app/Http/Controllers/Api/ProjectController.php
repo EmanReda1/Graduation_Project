@@ -95,7 +95,7 @@ class ProjectController extends Controller
      */
       public function show($id)
     {
-        dd('Reached show function with ID: ' . $id);
+
         try {
             Log::info('Attempting to fetch project with ID: ' . $id);
 
@@ -110,6 +110,7 @@ class ProjectController extends Controller
             }
 
             $project = Project::find($id);
+             dd('Project found: ' . ($project ? $project->project_name : 'Not found'));
 
             if (!$project) {
                 Log::warning('Project not found with ID: ' . $id);
