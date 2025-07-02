@@ -94,6 +94,7 @@ class VisitController extends Controller
     public function scan(Request $request)
     {
         try {
+            dd("Reached scan function");
             // Validate request
             $validator = Validator::make($request->all(), [
                 'qr_code' => 'required|string',
