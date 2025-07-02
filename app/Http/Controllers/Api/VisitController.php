@@ -95,78 +95,59 @@ class VisitController extends Controller
     public function scan(Request $request)
     {
         try {
-
             // Validate request
             $validator = Validator::make($request->all(), [
-                'qr_code' => 'required|string',
-                'location' => 'nullable|string'
+                "qr_code" => "required|string",
+                "location" => "nullable|string"
             ]);
 
             if ($validator->fails()) {
                 return response()->json([
-                    'status' => 'error',
-                    'message' => 'بيانات غير صحيحة',
-                    'errors' => $validator->errors()
+                    "status" => "error",
+                    "message" => "بيانات غير صحيحة",
+                    "errors" => $validator->errors()
                 ], 422);
             }
 
-
-
-            // Get student from token
-             $student= Auth::guard('api')->user();
-            try {
-               //$student = JWTAuth::parseToken()->authenticate();
-                if (!$student) {
-                   $studentIdFromToken = JWTAuth::parseToken()->getPayload()->get("sub");
-
-
-                    if ($studentIdFromToken) {
-                        $student = Student::find($studentIdFromToken);
-                    }
-                }
-            } catch (\Exception $e) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'يجب تسجيل الدخول أولاً'
-                ], 401);
-            }
+            // Get student from authenticated user (assuming JWTAuth middleware is used)
+           $student= Auth::guard('api')->user();
 
             if (!$student) {
                 return response()->json([
-                    'status' => 'error',
-                    'message' => 'المستخدم غير موجود'
-                ], 404);
+                    "status" => "error",
+                    "message" => "يجب تسجيل الدخول أولاً"
+                ], 401);
             }
 
             // Validate QR code (should be the library's QR code)
             $validQrCodes = [
-                'LIBRARY_001',
-                'FCI_ZU_LIBRARY',
-                'MAIN_LIBRARY_ENTRANCE'
+                "LIBRARY_001",
+                "FCI_ZU_LIBRARY",
+                "MAIN_LIBRARY_ENTRANCE"
             ];
 
             if (!in_array($request->qr_code, $validQrCodes)) {
                 return response()->json([
-                    'status' => 'error',
-                    'message' => 'رمز QR غير صحيح أو غير مصرح به'
+                    "status" => "error",
+                    "message" => "رمز QR غير صحيح أو غير مصرح به"
                 ], 400);
             }
 
             // Check if student already visited today
             $today = Carbon::today();
-            $existingVisit = Visit::where('student_id', $student->student_id)
-                ->whereDate('visit_time', $today)
+            $existingVisit = Visit::where("student_id", $student->student_id)
+                ->whereDate("visit_time", $today)
                 ->first();
 
             if ($existingVisit) {
                 return response()->json([
-                    'status' => 'info',
-                    'message' => 'لقد قمت بتسجيل زيارة اليوم بالفعل',
-                    'data' => [
-                        'existing_visit' => [
-                            'visit_id' => $existingVisit->visit_id,
-                            'visit_time' => $existingVisit->visit_time,
-                            'visit_time_formatted' => Carbon::parse($existingVisit->visit_time)->format('h:i A')
+                    "status" => "info",
+                    "message" => "لقد قمت بتسجيل زيارة اليوم بالفعل",
+                    "data" => [
+                        "existing_visit" => [
+                            "visit_id" => $existingVisit->visit_id,
+                            "visit_time" => $existingVisit->visit_time,
+                            "visit_time_formatted" => Carbon::parse($existingVisit->visit_time)->format("h:i A")
                         ]
                     ]
                 ], 200);
@@ -174,34 +155,35 @@ class VisitController extends Controller
 
             // Create new visit
             $visit = Visit::create([
-                'student_id' => $student->student_id,
-                'visit_time' => Carbon::now()
+                "student_id" => $student->student_id,
+                "visit_time" => Carbon::now()
             ]);
 
             Log::info("New visit recorded for student ID: {$student->student_id}, Visit ID: {$visit->visit_id}");
 
             return response()->json([
-                'status' => 'success',
-                'message' => 'تم تسجيل الزيارة بنجاح',
-                'data' => [
-                    'visit' => [
-                        'visit_id' => $visit->visit_id,
-                        'student_name' => $student->fullname,
-                        'visit_time' => $visit->visit_time,
-                        'visit_time_formatted' => Carbon::parse($visit->visit_time)->format('h:i A'),
-                        'visit_date' => Carbon::parse($visit->visit_time)->format('Y-m-d')
+                "status" => "success",
+                "message" => "تم تسجيل الزيارة بنجاح",
+                "data" => [
+                    "visit" => [
+                        "visit_id" => $visit->visit_id,
+                        "student_name" => $student->fullname,
+                        "visit_time" => $visit->visit_time,
+                        "visit_time_formatted" => Carbon::parse($visit->visit_time)->format("h:i A"),
+                        "visit_date" => Carbon::parse($visit->visit_time)->format("Y-m-d")
                     ]
                 ]
             ], 201);
 
         } catch (\Exception $e) {
-            Log::error('Error in visit scan: ' . $e->getMessage());
+            Log::error("Error in visit scan: " . $e->getMessage() . " Stack: " . $e->getTraceAsString());
             return response()->json([
-                'status' => 'error',
-                'message' => 'حدث خطأ في تسجيل الزيارة'
+                "status" => "error",
+                "message" => "حدث خطأ في تسجيل الزيارة"
             ], 500);
         }
     }
+
 
     /**
      * Check if student can visit today (hasn't visited yet)
