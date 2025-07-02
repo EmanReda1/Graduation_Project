@@ -93,48 +93,17 @@ class ProjectController extends Controller
      * @param int $id
      * @return \Illuminate\Http\JsonResponse
      */
-      public function show($id)
+         public function show($id)
     {
-
         try {
-            Log::info('Attempting to fetch project with ID: ' . $id);
-
-            // Attempt to get authenticated student for favorited status, but don\'t require it
-            $student = null;
-            try {
-                $student = JWTAuth::parseToken()->authenticate();
-                Log::info('Student authenticated for project details.');
-            } catch (\Exception $e) {
-                Log::warning('JWTAuth failed for project details: ' . $e->getMessage());
-                // Token not provided or invalid, continue without student context
-            }
-
             $project = Project::find($id);
-             dd('Project found: ' . ($project ? $project->project_name : 'Not found'));
 
             if (!$project) {
-                Log::warning('Project not found with ID: ' . $id);
                 return response()->json([
                     'status' => 'error',
                     'message' => 'المشروع غير موجود'
                 ], 404);
             }
-
-            Log::info('Project found: ' . $project->project_name);
-
-            // Check if 'image' attribute exists and is not null before using asset()
-            $imageUrl = null;
-            if (isset($project->image) && !empty($project->image)) {
-                try {
-                    $imageUrl = asset($project->image);
-                    Log::info('Image URL generated: ' . $imageUrl);
-                } catch (\Exception $e) {
-                    Log::error('Error generating image asset URL: ' . $e->getMessage());
-                    $imageUrl = null; // Fallback if asset() fails
-                }
-            }
-
-            Log::info('Preparing project data for response.');
 
             return response()->json([
                 'status' => 'success',
@@ -148,22 +117,19 @@ class ProjectController extends Controller
                     'supervisor' => $project->supervisor,
                     'project_date' => $project->project_date,
                     'summary' => $project->summary,
-                    'image' => $imageUrl,
+                    'image' => $project->image ? asset($project->image) : null,
                     'created_at' => $project->created_at,
                     'updated_at' => $project->updated_at
                 ]
             ]);
 
         } catch (\Exception $e) {
-            // Log the actual exception message for debugging
-            Log::error('Error fetching project details: ' . $e->getMessage() . ' Stack: ' . $e->getTraceAsString());
             return response()->json([
                 'status' => 'error',
                 'message' => 'حدث خطأ في جلب تفاصيل المشروع'
             ], 500);
         }
     }
-
 
 
     /**
