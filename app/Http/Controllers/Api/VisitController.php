@@ -94,7 +94,7 @@ class VisitController extends Controller
     public function scan(Request $request)
     {
         try {
-            dd("Reached scan function");
+
             // Validate request
             $validator = Validator::make($request->all(), [
                 'qr_code' => 'required|string',
@@ -108,6 +108,8 @@ class VisitController extends Controller
                     'errors' => $validator->errors()
                 ], 422);
             }
+
+             dd("Validation passed. QR Code: " . $request->qr_code);
 
             // Get student from token
             $student = null;
