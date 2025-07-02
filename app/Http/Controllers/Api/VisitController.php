@@ -109,15 +109,15 @@ class VisitController extends Controller
                 ], 422);
             }
 
-             dd("Validation passed. QR Code: " . $request->qr_code);
+
 
             // Get student from token
             $student = null;
             try {
-               // $student = JWTAuth::parseToken()->authenticate();
+               $student = JWTAuth::parseToken()->authenticate();
                 if (!$student) {
                    $studentIdFromToken = JWTAuth::parseToken()->getPayload()->get("sub");
-                   dd("Student authenticated: " . ($student ? $student->username : "Not authenticated"));
+                 // dd("Student authenticated: " . ($student ? $student->username : "Not authenticated"));
 
                     if ($studentIdFromToken) {
                         $student = Student::find($studentIdFromToken);
