@@ -24,7 +24,7 @@ class FavouriteController extends Controller
     {
         try {
             $student = JWTAuth::parseToken()->authenticate();
-            dd($student);
+            dd(JWTAuth::parseToken()->getPayload());
 
             $perPage = $request->get('per_page', 15);
 
