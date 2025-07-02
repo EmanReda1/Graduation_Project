@@ -25,9 +25,7 @@ class FavouriteController extends Controller
     public function index(Request $request)
     {
         try {
-            $studentId = JWTAuth::parseToken()->getPayload()->get("sub");
-             $student = \App\Models\Student::find($studentId);
-           // $student = JWTAuth::parseToken()->authenticate();
+             $student = JWTAuth::parseToken()->authenticate();
              dd($student);
 
             $perPage = $request->get('per_page', 15);
