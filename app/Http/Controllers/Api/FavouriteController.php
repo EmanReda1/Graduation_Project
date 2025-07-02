@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+
 use App\Models\Favourite;
 use App\Models\Book;
+use App\Models\Student;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Tymon\JWTAuth\Facades\JWTAuth;
@@ -23,8 +25,10 @@ class FavouriteController extends Controller
     public function index(Request $request)
     {
         try {
-            $student = JWTAuth::parseToken()->authenticate();
-            dd(JWTAuth::parseToken()->getPayload());
+            $studentId = JWTAuth::parseToken()->getPayload()->get("sub");
+             $student = App\Models\Student::find($studentId);
+           // $student = JWTAuth::parseToken()->authenticate();
+             dd($student);
 
             $perPage = $request->get('per_page', 15);
 

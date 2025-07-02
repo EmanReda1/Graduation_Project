@@ -70,9 +70,9 @@ return [
             'model' => App\Models\User::class,
         ],
 
-        'students' => [ // أضف هذا الـ provider إذا لم يكن موجوداً
+        'students' => [
             'driver' => 'eloquent',
-            'model' => App\Models\Student::class, // تأكد أنه يشير إلى Student Model الخاص بك
+            'model' => App\Models\Student::class,
         ],
     ],
 
