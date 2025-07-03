@@ -81,7 +81,7 @@ return [
         |
         */
 
-        'passphrase' => env('JWT_PASSPHRASE'),
+        'passphrase' => null,
 
     ],
 
