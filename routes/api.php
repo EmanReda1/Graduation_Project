@@ -103,7 +103,7 @@ Route::prefix('v1')->group(function () {
         Route::prefix('visits')->group(function () {
             Route::get('/', [VisitController::class, 'index']);
             Route::post('/', [VisitController::class, 'store']);
-            Route::post('scan', [VisitController::class, 'scan']); // New QR code scan route
+            Route::post('scan', [VisitController::class, 'scan'])->middleware('jwt.auth'); // New QR code scan route
             Route::get('statistics', [VisitController::class, 'statistics']);
             Route::get('can-visit-today', [VisitController::class, 'canVisitToday']);
             Route::get('recent', [VisitController::class, 'recent']);
