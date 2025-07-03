@@ -63,7 +63,8 @@ Route::get('/scan', [VisitController::class, 'showQrCode'])->name('scan.display'
 Route::get("/reading-records", [ReadingRecordController::class, "index"])->name("reading-records.index");
 Route::get("/reading-records/{id}", [ReadingRecordController::class, "show"])->name("reading-records.show");
 Route::get("/reading-records/{id}/request-borrow", [ReadingRecordController::class, "requestBorrow"])->name("reading-records.request-borrow");
-Route::get("/reading-records/{id}/return", [ReadingRecordController::class, "returnBook"])->name("reading-records.return");
+Route::post("/reading-records/{id}/return", [ReadingRecordController::class, "returnBook"])->name("reading-records.return");
+Route::post("/reading-records/{id}/reject-return", [ReadingRecordController::class, "rejectReturn"])->name("reading-records.reject-return");
 
 // Borrowing Records Routes
 Route::get("/borrowing-records", [BorrowingRecordController::class, "index"])->name("borrowing-records.index");
@@ -72,25 +73,25 @@ Route::get("/borrowing-records/{id}", [BorrowingRecordController::class, "show"]
 // Borrowed Books Routes (Currently borrowed books)
 Route::get("/borrowed-books", [BorrowedBooksController::class, "index"])->name("borrowed-books.index");
 Route::get("/borrowed-books/{id}", [BorrowedBooksController::class, "show"])->name("borrowed-books.show");
-Route::get("/borrowed-books/{id}/return", [BorrowedBooksController::class, "returnBook"])->name("borrowed-books.return");
-Route::get("/borrowed-books/{id}/extend", [BorrowedBooksController::class, "extendBorrowing"])->name("borrowed-books.extend");
+Route::post("/borrowed-books/{id}/return", [BorrowedBooksController::class, "returnBook"])->name("borrowed-books.return");
+Route::post("/borrowed-books/{id}/extend", [BorrowedBooksController::class, "extendBorrowing"])->name("borrowed-books.extend");
 Route::get("/borrowed-books/search", [BorrowedBooksController::class, "search"])->name("borrowed-books.search");
 Route::get("/borrowed-books/department/{department}", [BorrowedBooksController::class, "getByDepartment"])->name("borrowed-books.department");
 Route::get("/borrowed-books/student/{id}", [BorrowedBooksController::class, "getByStudent"])->name("borrowed-books.student");
 
-// Reading Requests Routes (New)
+/// Reading Requests Routes
 Route::get("/reading-requests", [ReadingRequestController::class, "index"])->name("reading-requests.index");
 Route::get("/reading-requests/{id}", [ReadingRequestController::class, "show"])->name("reading-requests.show");
-Route::get("/reading-requests/{id}/approve", [ReadingRequestController::class, "approve"])->name("reading-requests.approve");
-Route::get("/reading-requests/{id}/reject", [ReadingRequestController::class, "reject"])->name("reading-requests.reject");
+Route::post("/reading-requests/{id}/approve", [ReadingRequestController::class, "approve"])->name("reading-requests.approve");
+Route::post("/reading-requests/{id}/reject", [ReadingRequestController::class, "reject"])->name("reading-requests.reject");
 Route::get("/reading-requests/search", [ReadingRequestController::class, "search"])->name("reading-requests.search");
 Route::get("/reading-requests/student/{id}", [ReadingRequestController::class, "getByStudent"])->name("reading-requests.student");
 
-// Borrowing Requests Routes (New)
+// Borrowing Requests Routes
 Route::get("/borrowing-requests", [BorrowingRequestController::class, "index"])->name("borrowing-requests.index");
 Route::get("/borrowing-requests/{id}", [BorrowingRequestController::class, "show"])->name("borrowing-requests.show");
-Route::get("/borrowing-requests/{id}/approve", [BorrowingRequestController::class, "approve"])->name("borrowing-requests.approve");
-Route::get("/borrowing-requests/{id}/reject", [BorrowingRequestController::class, "reject"])->name("borrowing-requests.reject");
+Route::post("/borrowing-requests/{id}/approve", [BorrowingRequestController::class, "approve"])->name("borrowing-requests.approve");
+Route::post("/borrowing-requests/{id}/reject", [BorrowingRequestController::class, "reject"])->name("borrowing-requests.reject");
 Route::get("/borrowing-requests/search", [BorrowingRequestController::class, "search"])->name("borrowing-requests.search");
 Route::get("/borrowing-requests/student/{id}", [BorrowingRequestController::class, "getByStudent"])->name("borrowing-requests.student");
 

@@ -85,8 +85,14 @@
             <div class="d-flex justify-content-between">
                 <div>
                     @if($request->status == 'pending')
-                        <a href="{{ route('reading-requests.approve', $request->request_id) }}" class="btn btn-success">قبول</a>
-                        <a href="{{ route('reading-requests.reject', $request->request_id) }}" class="btn btn-danger">رفض</a>
+                        <form action="{{ route('reading-requests.approve', $request->request_id) }}" method="POST" style="display:inline;">
+                            @csrf
+                            <button type="submit" class="btn btn-success">قبول</button>
+                        </form>
+                        <form action="{{ route('reading-requests.reject', $request->request_id) }}" method="POST" style="display:inline;">
+                            @csrf
+                            <button type="submit" class="btn btn-danger">رفض</button>
+                        </form>
                     @endif
                 </div>
                 <div>
@@ -97,3 +103,5 @@
     </div>
 </div>
 @endsection
+
+

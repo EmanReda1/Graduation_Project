@@ -70,15 +70,16 @@ Route::prefix('v1')->group(function () {
             Route::get('{bookId}/can-review', [ReviewController::class, 'canReview']);
         });
 
-        // Book requests routes
-        Route::prefix('book-requests')->group(function () {
-            Route::get('/', [BookRequestController::class, 'index']);
-            Route::post('/', [BookRequestController::class, 'store']);
-            Route::get('borrowed-books', [BookRequestController::class, 'borrowedBooks']);
-            Route::get('{id}', [BookRequestController::class, 'show']);
-            Route::post('{id}/return', [BookRequestController::class, 'requestReturn']);
-            Route::post('{id}/extend', [BookRequestController::class, 'requestExtension']);
-            Route::delete('{id}/cancel', [BookRequestController::class, 'cancel']);
+
+        // Book requests routes (Student-specific)
+        Route::prefix("book-requests")->group(function () {
+            Route::get("/",[BookRequestController::class, "index"]); // API for listing student's requests with filters
+            Route::post("/",[BookRequestController::class, "store"]);
+            Route::get("borrowed-books", [BookRequestController::class, "borrowedBooks"]);
+            Route::get("{id}", [BookRequestController::class, "show"]);
+            Route::post("{id}/return", [BookRequestController::class, "requestReturn"]);
+            Route::post("{id}/extend", [BookRequestController::class, "requestExtension"]);
+            Route::delete("{id}/cancel", [BookRequestController::class, "cancel"]);
         });
 
         // Favorites routes
@@ -103,7 +104,7 @@ Route::prefix('v1')->group(function () {
         Route::prefix('visits')->group(function () {
             Route::get('/', [VisitController::class, 'index']);
             Route::post('/', [VisitController::class, 'store']);
-            Route::post('scan', [VisitController::class, 'scan'])->middleware('jwt.auth'); // New QR code scan route
+            Route::post('scan', [VisitController::class, 'scan']); // New QR code scan route
             Route::get('statistics', [VisitController::class, 'statistics']);
             Route::get('can-visit-today', [VisitController::class, 'canVisitToday']);
             Route::get('recent', [VisitController::class, 'recent']);
@@ -199,6 +200,12 @@ Route::prefix('v1')->group(function () {
             });
         });
     });
+
+    // api.php
+
+// ... (باقي الـ routes)
+
+
 //});
 
 // This route is typically handled by Laravel's default web routes or not needed for API
