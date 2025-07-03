@@ -72,14 +72,7 @@ return [
 
         'private' => env('JWT_PRIVATE_KEY'),
 
-        /*
-        |--------------------------------------------------------------------------
-        | Passphrase
-        |--------------------------------------------------------------------------
-        |
-        | The passphrase for your private key. Can be null if none set.
-        |
-        */
+
 
         'passphrase' => null,
 
