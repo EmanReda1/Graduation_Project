@@ -7,7 +7,7 @@ use App\Models\Book;
 use App\Models\Student;
 use App\Models\Notification;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth; // Add this line
+use Illuminate\Support\Facades\Auth;
 
 class ReadingRequestController extends Controller
 {
@@ -92,17 +92,27 @@ class ReadingRequestController extends Controller
         $retrieveRequest->request_date = now();
         $retrieveRequest->save();
 
-        // Add notification
-        $librarian = Auth::user(); // Get authenticated librarian (user from users table)
-        $student = $request->student; // Get the student associated with the request
+        // Add notification to student
         Notification::create([
-            "librarian_id" => $librarian->id,
             "student_id" => $request->student_id,
-            "message" => "تمت الموافقة على طلب قراءة الكتاب " . ($request->book->book_name ?? 'غير معروف') . " من قبل الأمينة " . ($librarian->name ?? 'غير معروف') . ".", // Use librarian's name
+            "message" => "تمت الموافقة على طلب قراءة الكتاب " . ($request->book->book_name ?? 'غير معروف') . ".",
             "type" => "reading_approved",
             "is_read" => false,
             "date_time" => now(),
         ]);
+
+        // Add notification to librarian
+        $librarian = Auth::user(); // Assuming Auth::user() gets the authenticated librarian
+        if ($librarian) {
+            Notification::create([
+                "librarian_id" => $librarian->librarian_id, // Use librarian_id from the librarian object
+                "student_id" => $request->student_id,
+                "message" => "تمت الموافقة على طلب قراءة الكتاب " . ($request->book->book_name ?? 'غير معروف') . " للطالب " . ($request->student->fullname ?? $request->student->username ?? 'غير معروف') . ".",
+                "type" => "reading_approved_librarian",
+                "is_read" => false,
+                "date_time" => now(),
+            ]);
+        }
 
         return redirect()->route("reading-requests.index")
             ->with("success", "تمت الموافقة على طلب القراءة بنجاح.");
@@ -128,17 +138,27 @@ class ReadingRequestController extends Controller
         $request->status = "rejected";
         $request->save();
 
-        // Add notification
-        $librarian = Auth::user(); // Get authenticated librarian (user from users table)
-        $student = $request->student; // Get the student associated with the request
+        // Add notification to student
         Notification::create([
-            "librarian_id" => $librarian->id,
             "student_id" => $request->student_id,
-            "message" => "تم رفض طلب قراءة الكتاب " . ($request->book->book_name ?? 'غير معروف') . " من قبل الأمينة " . ($librarian->name ?? 'غير معروف') . ". يرجى التواصل مع إدارة المكتبة.", // Use librarian's name
+            "message" => "تم رفض طلب قراءة الكتاب " . ($request->book->book_name ?? 'غير معروف') . ". يرجى التواصل مع إدارة المكتبة.",
             "type" => "reading_rejected",
             "is_read" => false,
             "date_time" => now(),
         ]);
+
+        // Add notification to librarian
+        $librarian = Auth::user(); // Assuming Auth::user() gets the authenticated librarian
+        if ($librarian) {
+            Notification::create([
+                "librarian_id" => $librarian->librarian_id, // Use librarian_id from the librarian object
+                "student_id" => $request->student_id,
+                "message" => "تم رفض طلب قراءة الكتاب " . ($request->book->book_name ?? 'غير معروف') . " للطالب " . ($request->student->fullname ?? $request->student->username ?? 'غير معروف') . ".",
+                "type" => "reading_rejected_librarian",
+                "is_read" => false,
+                "date_time" => now(),
+            ]);
+        }
 
         return redirect()->route("reading-requests.index")
             ->with("success", "تم رفض طلب القراءة بنجاح.");
@@ -169,5 +189,7 @@ class ReadingRequestController extends Controller
         return $this->index($request);
     }
 }
+
+
 
 
