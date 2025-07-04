@@ -2,119 +2,106 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\RetrieveRequest;
-use App\Models\Student;
-use App\Models\Book;
 use App\Models\BookRequest;
+use App\Models\RetrieveRequest;
 use Illuminate\Http\Request;
 
 class ReadingRecordController extends Controller
 {
-    /**
-     * Display a listing of the reading records.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
-     */
     public function index(Request $request)
     {
-        // Get reading requests that are currently active
-        $query = RetrieveRequest::with(['request.student', 'request.book'])
-            ->reading()
-            ->whereHas('request', function($q) {
-                $q->where('status', 'approved');
-            });
+        $query = BookRequest::with(["student", "book"])
+            ->where("type", "reading")
+            ->where("status", "approved");
 
-        // Apply filters
-        if ($request->filled('student_id')) {
-            $query->byStudent($request->student_id);
-        }
-
-        if ($request->filled('book_id')) {
-            $query->byBook($request->book_id);
-        }
-
-        if ($request->filled('search')) {
+        if ($request->filled("search")) {
             $search = $request->search;
-            $query->whereHas('request.student', function($q) use ($search) {
-                $q->where('fullname', 'like', "%{$search}%");
-            })->orWhereHas('request.book', function($q) use ($search) {
-                $q->where('book_name', 'like', "%{$search}%");
+            $query->where(function($q) use ($search) {
+                $q->whereHas("student", function($sq) use ($search) {
+                    $sq->where("fullname", "like", "%{$search}%");
+                })->orWhereHas("book", function($bq) use ($search) {
+                    $bq->where("book_name", "like", "%{$search}%");
+                });
             });
         }
 
-        // Sort by date
-        $query->orderBy('request_date', 'desc');
+        $readingRecords = $query->orderBy("date_of_request", "desc")->paginate(15);
 
-        $readingRecords = $query->paginate(10);
+        // Eager load retrieve requests and add a flag to each reading record
+        $readingRecords->each(function ($record) {
+            // The request_id in retrieve_requests refers to the request_id in book_requests (requests table)
+            $record->retrieve_request = RetrieveRequest::where("request_id", $record->request_id)->first();
+        });
 
-        return view('reading_records.index', compact('readingRecords'));
+        return view("reading_records.index", compact("readingRecords"));
     }
 
-    /**
-     * Display the specified reading record.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
     public function show($id)
     {
-        $readingRecord = RetrieveRequest::with(['request.student', 'request.book'])
-            ->reading()
+        $readingRecord = BookRequest::with(["student", "book"])
+            ->where("type", "reading")
+            ->where("status", "approved")
             ->findOrFail($id);
 
-        return view('reading_records.show', compact('readingRecord'));
+        // Eager load retrieve request and add it to the reading record
+        // The request_id in retrieve_requests refers to the request_id in book_requests (requests table)
+        $readingRecord->retrieve_request = RetrieveRequest::where("request_id", $readingRecord->request_id)->first();
+
+        return view("reading_records.show", compact("readingRecord"));
     }
 
-    /**
-     * Process a request to borrow a book that is currently being read.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function requestBorrow($id)
-    {
-        $readingRecord = RetrieveRequest::with(['request.student', 'request.book'])
-            ->reading()
-            ->findOrFail($id);
-
-        // Create a new borrowing request
-        $borrowRequest = new BookRequest();
-        $borrowRequest->student_id = $readingRecord->request->student_id;
-        $borrowRequest->book_id = $readingRecord->request->book_id;
-        $borrowRequest->date_of_request = now();
-        $borrowRequest->status = 'pending';
-        $borrowRequest->type = 'borrowing';
-        $borrowRequest->save();
-
-        return redirect()->route('reading-records.index')
-            ->with('success', 'تم إرسال طلب الاستعارة بنجاح.');
-    }
-
-    /**
-     * Process a request to return a book that is currently being read.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
     public function returnBook($id)
     {
-        $readingRecord = RetrieveRequest::with(['request.student', 'request.book'])
-            ->reading()
-            ->findOrFail($id);
+        $bookRequest = BookRequest::findOrFail($id);
 
-        // Update the request status
-        $readingRecord->request->status = 'completed';
-        $readingRecord->request->save();
+        // Check if there\\\'s a pending retrieve request for this book request
+        // The request_id in retrieve_requests refers to the request_id in book_requests (requests table)
+        $retrieveRequest = RetrieveRequest::where("request_id", $bookRequest->request_id)
+                                        ->where("status", "pending")
+                                        ->first();
 
-        // Update the book status
-        if ($readingRecord->request->book) {
-            $book = $readingRecord->request->book;
-            $book->status = 'available';
-            $book->save();
+        if (!$retrieveRequest) {
+            return redirect()->back()->with("error", "لا يوجد طلب إرجاع معلق لهذا الكتاب.");
         }
 
-        return redirect()->route('reading-records.index')
-            ->with('success', 'تم إعادة الكتاب بنجاح.');
+        // Update request status
+        $bookRequest->status = 'returned';
+        $bookRequest->save();
+
+        // Update book status
+        $book = $bookRequest->book;
+        $book->status = 'available';
+        $book->save();
+
+        // Update retrieve request status
+        $retrieveRequest->status = 'completed';
+        $retrieveRequest->save();
+
+        return redirect()->route("reading-records.index")
+            ->with("success", "تمت إعادة الكتاب بنجاح.");
+    }
+
+    public function rejectReturn($id)
+    {
+        $bookRequest = BookRequest::findOrFail($id);
+
+        // Check if there\\\'s a pending retrieve request for this book request
+        // The request_id in retrieve_requests refers to the request_id in book_requests (requests table)
+        $retrieveRequest = RetrieveRequest::where("request_id", $bookRequest->request_id)
+                                        ->where("status", "pending")
+                                        ->first();
+
+        if (!$retrieveRequest) {
+            return redirect()->back()->with("error", "لا يوجد طلب إرجاع معلق لهذا الكتاب لرفضه.");
+        }
+
+        // Update retrieve request status to rejected
+        $retrieveRequest->status = 'rejected';
+        $retrieveRequest->save();
+
+        return redirect()->route("reading-records.index")
+            ->with("success", "تم رفض طلب الإرجاع بنجاح.");
     }
 }
+
+

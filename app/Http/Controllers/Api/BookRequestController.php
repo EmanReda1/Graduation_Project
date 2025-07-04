@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\BookRequest;
 use App\Models\Book;
 use App\Models\Notification;
+use App\Models\RetrieveRequest; // Added this line
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
@@ -33,7 +34,7 @@ class BookRequestController extends Controller
             }
 
             $query = BookRequest::where("student_id", $student->student_id)
-                               ->with(["book"]);
+                ->with(["book"]);
 
             if ($request->filled("type")) {
                 $query->where("type", $request->type);
@@ -53,9 +54,9 @@ class BookRequestController extends Controller
 
             if ($request->filled("search")) {
                 $search = $request->search;
-                $query->whereHas("book", function($sq) use ($search) {
+                $query->whereHas("book", function ($sq) use ($search) {
                     $sq->where("book_name", "like", "%{$search}%")
-                       ->orWhere("author", "like", "%{$search}%");
+                        ->orWhere("author", "like", "%{$search}%");
                 });
             }
 
@@ -65,7 +66,6 @@ class BookRequestController extends Controller
                 "status" => "success",
                 "data" => $requests
             ]);
-
         } catch (\Exception $e) {
             Log::error("Error fetching student book requests: " . $e->getMessage());
             return response()->json([
@@ -149,7 +149,6 @@ class BookRequestController extends Controller
                 "message" => "تم إنشاء طلب الكتاب بنجاح.",
                 "data" => $bookRequest
             ], 201);
-
         } catch (ValidationException $e) {
             Log::error("Validation Error for Book Request: " . $e->getMessage());
             Log::error("Validation Errors: " . json_encode($e->errors()));
@@ -158,7 +157,6 @@ class BookRequestController extends Controller
                 "message" => "خطأ في التحقق من البيانات",
                 "errors" => $e->errors()
             ], 422);
-
         } catch (\Exception $e) {
             Log::error("Error saving book request: " . $e->getMessage());
             Log::error("Stack trace: " . $e->getTraceAsString());
@@ -202,7 +200,7 @@ class BookRequestController extends Controller
 
             $originalRequest = BookRequest::where("request_id", $id)
                 ->where("student_id", $student->student_id)
-                ->where("type", "borrowing")
+                ->whereIn("type", ["borrowing", "reading"])
                 ->where("status", "approved")
                 ->first();
 
@@ -213,9 +211,8 @@ class BookRequestController extends Controller
                 ], 404);
             }
 
-            $existingReturnRequest = BookRequest::where("student_id", $student->student_id)
-                ->where("book_id", $originalRequest->book_id)
-                ->where("type", "return")
+            // Check for existing pending retrieve request in the new retrieve_requests table
+            $existingReturnRequest = RetrieveRequest::where("request_id", $originalRequest->request_id)
                 ->where("status", "pending")
                 ->first();
 
@@ -226,11 +223,10 @@ class BookRequestController extends Controller
                 ], 400);
             }
 
-            $returnRequest = BookRequest::create([
-                "student_id" => $student->student_id,
-                "book_id" => $originalRequest->book_id,
-                "type" => "return",
-                "date_of_request" => now(),
+            // Create retrieve request in the retrieve_requests table
+            $returnRequest = RetrieveRequest::create([
+                "request_id" => $originalRequest->request_id,
+                "request_date" => now(),
                 "status" => "pending",
                 "notes" => $request->notes ?? "طلب إرجاع كتاب"
             ]);
@@ -254,13 +250,12 @@ class BookRequestController extends Controller
                 "status" => "success",
                 "message" => "تم إرسال طلب الإرجاع بنجاح. سيتم مراجعته من قبل أمين المكتبة.",
                 "data" => [
+                    "retrieve_id" => $returnRequest->retrieve_id,
                     "request_id" => $returnRequest->request_id,
-                    "type" => $returnRequest->type,
                     "status" => $returnRequest->status,
-                    "date_of_request" => $returnRequest->date_of_request
+                    "request_date" => $returnRequest->request_date
                 ]
             ], 201);
-
         } catch (\Exception $e) {
             Log::error("Error in requestReturn: " . $e->getMessage());
             return response()->json([
@@ -361,7 +356,6 @@ class BookRequestController extends Controller
                     "date_of_request" => $extensionRequest->date_of_request
                 ]
             ], 201);
-
         } catch (\Exception $e) {
             Log::error("Error in requestExtension: " . $e->getMessage());
             return response()->json([
@@ -422,7 +416,6 @@ class BookRequestController extends Controller
                 "status" => "success",
                 "message" => "تم إلغاء الطلب بنجاح"
             ]);
-
         } catch (\Exception $e) {
             Log::error("Error in cancel: " . $e->getMessage());
             return response()->json([
@@ -457,7 +450,7 @@ class BookRequestController extends Controller
 
             if ($request->filled("search")) {
                 $search = $request->search;
-                $query->whereHas("book", function($sq) use ($search) {
+                $query->whereHas("book", function ($sq) use ($search) {
                     $sq->where("book_name", "like", "%{$search}%")
                         ->orWhere("author", "like", "%{$search}%");
                 });
@@ -469,7 +462,6 @@ class BookRequestController extends Controller
                 "status" => "success",
                 "data" => $borrowedBooks
             ]);
-
         } catch (\Exception $e) {
             Log::error("Error fetching borrowed books: " . $e->getMessage());
             return response()->json([

@@ -14,31 +14,32 @@ use App\Http\Controllers\ReadingRequestController;
 use App\Http\Controllers\BorrowingRequestController;
 use App\Http\Controllers\StatisticsController;
 use App\Http\Controllers\ExamController;
+use App\Http\Controllers\RetrieveRequestController;
 
-Route::get('/', function () {
-    return view('auth.login');
+Route::get("/", function () {
+    return view("auth.login");
 });
 
 
 Auth::routes();
 
-Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
+Route::get("/home", [App\Http\Controllers\HomeController::class, "index"])->name("home");
 
 // Book routes
-Route::resource('books', BookController::class);
-Route::get('/books/search', [BookController::class, 'search'])->name('books.search');
-Route::get('/books/department/{department}', [BookController::class, 'getByDepartment'])->name('books.department');
-Route::get('/books/available', [BookController::class, 'getAvailable'])->name('books.available');
+Route::resource("books", BookController::class);
+Route::get("/books/search", [BookController::class, "search"])->name("books.search");
+Route::get("/books/department/{department}", [BookController::class, "getByDepartment"])->name("books.department");
+Route::get("/books/available", [BookController::class, "getAvailable"])->name("books.available");
 
 
 
 // Student routes
-Route::get('/students', [StudentController::class, 'index'])->name('students.index');
-Route::get('/students/search', [StudentController::class, 'search'])->name('students.search');
-Route::get('/students/statistics', [StudentController::class, 'getStatistics'])->name('students.statistics');
-Route::get('/students/department/{department}', [StudentController::class, 'getByDepartment'])->name('students.department');
-Route::get('/students/level/{level}', [StudentController::class, 'getByLevel'])->name('students.level');
-Route::get('/students/{id}', [StudentController::class, 'show'])->name('students.show');
+Route::get("/students", [StudentController::class, "index"])->name("students.index");
+Route::get("/students/search", [StudentController::class, "search"])->name("students.search");
+Route::get("/students/statistics", [StudentController::class, "getStatistics"])->name("students.statistics");
+Route::get("/students/department/{department}", [StudentController::class, "getByDepartment"])->name("students.department");
+Route::get("/students/level/{level}", [StudentController::class, "getByLevel"])->name("students.level");
+Route::get("/students/{id}", [StudentController::class, "show"])->name("students.show");
 
 // Project Routes
 Route::resource("projects", ProjectController::class);
@@ -48,21 +49,20 @@ Route::get("/projects/archived", [ProjectController::class, "archivedProjects"])
 
 
 // Visit Routes
-Route::get('/visits', [VisitController::class, 'index'])->name('visits.index');
-Route::get('/visits/search', [VisitController::class, 'search'])->name('visits.search');
-Route::get('/visits/today', [VisitController::class, 'getToday'])->name('visits.today');
+Route::get("/visits", [VisitController::class, "index"])->name("visits.index");
+Route::get("/visits/search", [VisitController::class, "search"])->name("visits.search");
+Route::get("/visits/today", [VisitController::class, "getToday"])->name("visits.today");
 
 // QR Code display route for library entrance
-Route::get('/library/qr-code', [VisitController::class, 'showQrCode'])->name('library.qr-code');
+Route::get("/library/qr-code", [VisitController::class, "showQrCode"])->name("library.qr-code");
 
 // Alternative routes for different displays
-Route::get('/qr', [VisitController::class, 'showQrCode'])->name('qr.display');
-Route::get('/scan', [VisitController::class, 'showQrCode'])->name('scan.display');
+Route::get("/qr", [VisitController::class, "showQrCode"])->name("qr.display");
+Route::get("/scan", [VisitController::class, "showQrCode"])->name("scan.display");
 
 // Reading Records Routes
 Route::get("/reading-records", [ReadingRecordController::class, "index"])->name("reading-records.index");
 Route::get("/reading-records/{id}", [ReadingRecordController::class, "show"])->name("reading-records.show");
-Route::get("/reading-records/{id}/request-borrow", [ReadingRecordController::class, "requestBorrow"])->name("reading-records.request-borrow");
 Route::post("/reading-records/{id}/return", [ReadingRecordController::class, "returnBook"])->name("reading-records.return");
 Route::post("/reading-records/{id}/reject-return", [ReadingRecordController::class, "rejectReturn"])->name("reading-records.reject-return");
 
@@ -96,26 +96,34 @@ Route::get("/borrowing-requests/search", [BorrowingRequestController::class, "se
 Route::get("/borrowing-requests/student/{id}", [BorrowingRequestController::class, "getByStudent"])->name("borrowing-requests.student");
 
 // Exam Resource Routes
-Route::resource('exams', ExamController::class);
+Route::resource("exams", ExamController::class);
 
 // Additional Exam Routes
-Route::get('/exams/available', [ExamController::class, 'getAvailable'])->name('exams.available');
-Route::get('/exams/archived', [ExamController::class, 'getArchived'])->name('exams.archived');
-Route::get('/exams/{exam}/download', [ExamController::class, 'downloadPdf'])->name('exams.download');
+Route::get("/exams/available", [ExamController::class, "getAvailable"])->name("exams.available");
+Route::get("/exams/archived", [ExamController::class, "getArchived"])->name("exams.archived");
+Route::get("/exams/{exam}/download", [ExamController::class, "downloadPdf"])->name("exams.download");
 
 
 // Statistics Routes
-Route::prefix('statistics')->name('statistics.')->group(function () {
+Route::prefix("statistics")->name("statistics.")->group(function () {
 
     // Main dashboard
-    Route::get('/', [StatisticsController::class, 'index'])->name('index');
+    Route::get("/", [StatisticsController::class, "index"])->name("index");
 
     // Detailed statistics pages
-    Route::get('/books', [StatisticsController::class, 'books'])->name('books');
-    Route::get('/students', [StatisticsController::class, 'students'])->name('students');
-    Route::get('/visits', [StatisticsController::class, 'visits'])->name('visits');
-    Route::get('/requests', [StatisticsController::class, 'requests'])->name('requests');
-    Route::get('/projects', [StatisticsController::class, 'projects'])->name('projects');
-    Route::get('/exams', [StatisticsController::class, 'exams'])->name('exams');
+    Route::get("/books", [StatisticsController::class, "books"])->name("books");
+    Route::get("/students", [StatisticsController::class, "students"])->name("students");
+    Route::get("/visits", [StatisticsController::class, "visits"])->name("visits");
+    Route::get("/requests", [StatisticsController::class, "requests"])->name("requests");
+    Route::get("/projects", [StatisticsController::class, "projects"])->name("projects");
+    Route::get("/exams", [StatisticsController::class, "exams"])->name("exams");
 
 });
+
+
+// Retrieve Requests Routes
+Route::get("/retrieve-requests", [RetrieveRequestController::class, "index"])->name("retrieve-requests.index");
+Route::post("/retrieve-requests/{id}/approve", [RetrieveRequestController::class, "approve"])->name("retrieve-requests.approve");
+Route::post("/retrieve-requests/{id}/reject", [RetrieveRequestController::class, "reject"])->name("retrieve-requests.reject");
+
+

@@ -8,6 +8,7 @@ use App\Models\Student;
 use App\Models\Notification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class ReadingRequestController extends Controller
 {
@@ -69,53 +70,67 @@ class ReadingRequestController extends Controller
      */
     public function approve($id)
     {
-        $request = BookRequest::findOrFail($id);
+        // Start a database transaction
+        DB::beginTransaction();
 
-        // Verify this is a reading request and it\"s pending
-        if ($request->type != "reading" || $request->status != "pending") {
-            return redirect()->route("reading-requests.index")
-                ->with("error", "لا يمكن الموافقة على هذا الطلب.");
-        }
+        try {
+            $request = BookRequest::findOrFail($id);
 
-        // Update request status
-        $request->status = "approved";
-        $request->save();
+            // Verify this is a reading request and it\"s pending
+            if ($request->type != "reading" || $request->status != "pending") {
+                DB::rollBack();
+                return redirect()->route("reading-requests.index")
+                    ->with("error", "لا يمكن الموافقة على هذا الطلب.");
+            }
 
-        // Update book status
-        $book = $request->book;
-        $book->status = "in_reading";
-        $book->save();
+            // Re-fetch the book with a lock to ensure exclusive access during this transaction
+            $book = Book::where('book_id', $request->book_id)->lockForUpdate()->first();
 
-        // Create a retrieve request to track the reading
-        $retrieveRequest = new \App\Models\RetrieveRequest();
-        $retrieveRequest->request_id = $request->request_id;
-        $retrieveRequest->request_date = now();
-        $retrieveRequest->save();
+            // Check if the book is available
+            if ($book->status !== "available") {
+                DB::rollBack();
+                return redirect()->back()->with("error", "الكتاب غير متاح حالياً للموافقة على طلب القراءة.");
+            }
 
-        // Add notification to student
-        Notification::create([
-            "student_id" => $request->student_id,
-            "message" => "تمت الموافقة على طلب قراءة الكتاب " . ($request->book->book_name ?? 'غير معروف') . ".",
-            "type" => "reading_approved",
-            "is_read" => false,
-            "date_time" => now(),
-        ]);
+            // Update request status
+            $request->status = "approved";
+            $request->save();
 
-        // Add notification to librarian
-        $librarian = Auth::user(); // Assuming Auth::user() gets the authenticated librarian
-        if ($librarian) {
+            // Update book status
+            $book->status = "in_reading";
+            $book->save();
+
+            // Commit the transaction
+            DB::commit();
+
+            // Add notification to student
             Notification::create([
-                "librarian_id" => $librarian->librarian_id, // Use librarian_id from the librarian object
                 "student_id" => $request->student_id,
-                "message" => "تمت الموافقة على طلب قراءة الكتاب " . ($request->book->book_name ?? 'غير معروف') . " للطالب " . ($request->student->fullname ?? $request->student->username ?? 'غير معروف') . ".",
-                "type" => "reading_approved_librarian",
+                "message" => "تمت الموافقة على طلب قراءة الكتاب " . ($request->book->book_name ?? 'غير معروف') . ".",
+                "type" => "reading_approved",
                 "is_read" => false,
                 "date_time" => now(),
             ]);
-        }
 
-        return redirect()->route("reading-requests.index")
-            ->with("success", "تمت الموافقة على طلب القراءة بنجاح.");
+            // Add notification to librarian
+            $librarian = Auth::user(); // Assuming Auth::user() gets the authenticated librarian
+            if ($librarian) {
+                Notification::create([
+                    "librarian_id" => $librarian->librarian_id, // Use librarian_id from the librarian object
+                    "student_id" => $request->student_id,
+                    "message" => "تمت الموافقة على طلب قراءة الكتاب " . ($request->book->book_name ?? 'غير معروف') . " للطالب " . ($request->student->fullname ?? $request->student->username ?? 'غير معروف') . ".",
+                    "type" => "reading_approved_librarian",
+                    "is_read" => false,
+                    "date_time" => now(),
+                ]);
+            }
+
+            return redirect()->route("reading-requests.index")
+                ->with("success", "تمت الموافقة على طلب القراءة بنجاح.");
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()->with("error", "حدث خطأ أثناء الموافقة على طلب القراءة: " . $e->getMessage());
+        }
     }
 
     /**
@@ -189,7 +204,5 @@ class ReadingRequestController extends Controller
         return $this->index($request);
     }
 }
-
-
 
 
