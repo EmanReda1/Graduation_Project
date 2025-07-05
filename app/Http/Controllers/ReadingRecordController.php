@@ -25,7 +25,7 @@ class ReadingRecordController extends Controller
             });
         }
 
-        $readingRecords = $query->orderBy("request_date", "desc")->paginate(15);
+        $readingRecords = $query->orderBy("date_of_request", "desc")->paginate(15);
 
         // Eager load retrieve requests and add a flag to each reading record
         $readingRecords->each(function ($record) {
