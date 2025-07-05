@@ -1,6 +1,6 @@
-@extends('layouts.app')
+@extends("layouts.app")
 
-@section('content')
+@section("content")
 <div class="container">
     <div class="row mb-4">
         <div class="col-md-8">
@@ -8,10 +8,16 @@
         </div>
     </div>
 
-    <!-- Search -->
+    <!-- Search and Filter -->
     <div class="mb-4">
-        <form action="{{ route('borrowed-books.search') }}" method="GET" class="d-flex">
-            <input type="text" class="form-control" id="search" name="search" placeholder="بحث..." value="{{ request('search') }}">
+        <form action="{{ route("borrowed-books.index") }}" method="GET" class="d-flex">
+            <input type="text" class="form-control" id="search" name="search" placeholder="بحث عن كتاب..." value="{{ request("search") }}">
+            <select class="form-select ms-2" id="department" name="department">
+                <option value="">جميع الأقسام</option>
+                @foreach($departments as $department)
+                    <option value="{{ $department }}" {{ request("department") == $department ? "selected" : "" }}>{{ $department }}</option>
+                @endforeach
+            </select>
             <button type="submit" class="btn btn-primary ms-2">
                 <i class="fas fa-search"></i>
             </button>
@@ -26,47 +32,48 @@
                     <table class="table table-striped table-hover">
                         <thead class="table-primary">
                             <tr>
-                                <th>استعادة الكتاب</th>
-                                <th>رقم الطلب</th>
-                                <th>تاريخ الاستعارة</th>
+                                <th>التفاصيل</th>
                                 <th>اسم الكتاب</th>
-                                <th>اسم الطالب</th>
+                                <th>المؤلف</th>
+                                <th>القسم</th>
+                                <th>الحالة</th>
+                                <th>الإجراءات</th>
                             </tr>
                         </thead>
                         <tbody>
                             @foreach($borrowedBooks as $book)
                                 <tr>
                                     <td>
-                                        <div class="d-flex">
-                                            <a href="{{ route('borrowed-books.extend', $book->book_id) }}" class="btn btn-sm btn-primary me-2">استعارة</a>
-                                            <a href="{{ route('borrowed-books.return', $book->book_id) }}" class="btn btn-sm btn-danger">رفض</a>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        @php
-                                            $request = $book->requests()
-                                                ->where('type', 'borrowing')
-                                                ->where('status', 'approved')
-                                                ->orderBy('date_of_request', 'desc')
-                                                ->first();
-                                        @endphp
-                                        {{ $request ? $request->request_id : 'غير متوفر' }}
-                                    </td>
-                                    <td>
-                                        @if($request)
-                                            {{ \Carbon\Carbon::parse($request->date_of_request)->format('d/m/Y') }}
-                                        @else
-                                            غير متوفر
-                                        @endif
+                                        <a href="{{ route("borrowed-books.show", $book->book_id) }}" class="btn btn-sm btn-primary">عرض</a>
                                     </td>
                                     <td>{{ $book->book_name }}</td>
+                                    <td>{{ $book->author }}</td>
+                                    <td>{{ $book->department }}</td>
                                     <td>
-                                        @if($request && $request->student)
-                                            <a href="{{ route('students.show', $request->student_id) }}">
-                                                {{ $request->student->fullname }}
-                                            </a>
+                                        <span class="badge bg-success">مستعار</span>
+                                    </td>
+                                    <td>
+                                        <!-- Librarian actions for return/extension requests -->
+                                        @if($book->return_request_pending)
+                                            <form action="{{ route("borrowed-books.approve-return", $book->book_id) }}" method="POST" style="display:inline;">
+                                                @csrf
+                                                <button type="submit" class="btn btn-sm btn-success">قبول الإرجاع</button>
+                                            </form>
+                                            <form action="{{ route("borrowed-books.reject-return", $book->book_id) }}" method="POST" style="display:inline;">
+                                                @csrf
+                                                <button type="submit" class="btn btn-sm btn-danger">رفض الإرجاع</button>
+                                            </form>
+                                        @elseif($book->extension_request_pending)
+                                            <form action="{{ route("borrowed-books.approve-extension", $book->book_id) }}" method="POST" style="display:inline;">
+                                                @csrf
+                                                <button type="submit" class="btn btn-sm btn-success">قبول التمديد</button>
+                                            </form>
+                                            <form action="{{ route("borrowed-books.reject-extension", $book->book_id) }}" method="POST" style="display:inline;">
+                                                @csrf
+                                                <button type="submit" class="btn btn-sm btn-danger">رفض التمديد</button>
+                                            </form>
                                         @else
-                                            غير متوفر
+                                            لا توجد طلبات معلقة
                                         @endif
                                     </td>
                                 </tr>
@@ -88,3 +95,7 @@
     </div>
 </div>
 @endsection
+
+
+
+

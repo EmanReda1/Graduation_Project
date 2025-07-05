@@ -1,6 +1,6 @@
-@extends('layouts.app')
+@extends("layouts.app")
 
-@section('content')
+@section("content")
 <div class="container">
     <div class="row mb-4">
         <div class="col-md-8">
@@ -10,8 +10,8 @@
 
     <!-- Search -->
     <div class="mb-4">
-        <form action="{{ route('borrowing-requests.index') }}" method="GET" class="d-flex">
-            <input type="text" class="form-control" id="search" name="search" placeholder="بحث..." value="{{ request('search') }}">
+        <form action="{{ route("borrowing-requests.index") }}" method="GET" class="d-flex">
+            <input type="text" class="form-control" id="search" name="search" placeholder="بحث..." value="{{ request("search") }}">
             <button type="submit" class="btn btn-primary ms-2">
                 <i class="fas fa-search"></i>
             </button>
@@ -30,20 +30,45 @@
                                 <th>رقم الطلب</th>
                                 <th>اسم الكتاب</th>
                                 <th>اسم الطالب</th>
+                                <th>الحالة</th>
+                                <th>الإجراءات</th>
                             </tr>
                         </thead>
                         <tbody>
                             @foreach($borrowingRequests as $request)
                                 <tr>
                                     <td>
-                                        <a href="{{ route('borrowing-requests.show', $request->request_id) }}" class="btn btn-sm btn-primary">عرض</a>
+                                        <a href="{{ route("borrowing-requests.show", $request->request_id) }}" class="btn btn-sm btn-primary">عرض</a>
                                     </td>
                                     <td>{{ $request->request_id }}</td>
-                                    <td>{{ $request->book ? $request->book->book_name : 'غير متوفر' }}</td>
+                                    <td>{{ $request->book ? $request->book->book_name : "غير متوفر" }}</td>
                                     <td>
-                                        <a href="{{ route('students.show', $request->student_id) }}">
-                                            {{ $request->student ? $request->student->fullname : 'غير متوفر' }}
+                                        <a href="{{ route("students.show", $request->student_id) }}">
+                                            {{ $request->student ? $request->student->fullname : "غير متوفر" }}
                                         </a>
+                                    </td>
+                                    <td>
+                                        @if($request->status == "pending")
+                                            <span class="badge bg-warning">معلق</span>
+                                        @elseif($request->status == "approved")
+                                            <span class="badge bg-success">مقبول</span>
+                                        @else
+                                            <span class="badge bg-danger">مرفوض</span>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        @if($request->status == "pending")
+                                            <form action="{{ route("borrowing-requests.approve", $request->request_id) }}" method="POST" style="display:inline;">
+                                                @csrf
+                                                <button type="submit" class="btn btn-sm btn-success">قبول</button>
+                                            </form>
+                                            <form action="{{ route("borrowing-requests.reject", $request->request_id) }}" method="POST" style="display:inline;">
+                                                @csrf
+                                                <button type="submit" class="btn btn-sm btn-danger">رفض</button>
+                                            </form>
+                                        @else
+                                            لا توجد إجراءات
+                                        @endif
                                     </td>
                                 </tr>
                             @endforeach
@@ -64,3 +89,5 @@
     </div>
 </div>
 @endsection
+
+

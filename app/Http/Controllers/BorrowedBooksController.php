@@ -8,6 +8,7 @@ use App\Models\Student;
 use App\Models\RetrieveRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class BorrowedBooksController extends Controller
 {
@@ -44,6 +45,30 @@ class BorrowedBooksController extends Controller
 
         $borrowedBooks = $query->paginate(15);
 
+        foreach ($borrowedBooks as $book) {
+            // Get the most recent approved borrowing request for this book
+            $latestBorrowRequest = BookRequest::where('book_id', $book->id)
+                                            ->where('type', 'borrowing')
+                                            ->where('status', 'approved')
+                                            ->latest('date_of_request')
+                                            ->first();
+
+            // Initialize as null first
+            $book->return_request_pending = null;
+
+            // Only check for return request if we have a valid borrow request
+            if ($latestBorrowRequest) {
+                $book->return_request_pending = RetrieveRequest::where('request_id', $latestBorrowRequest->request_id)
+                                                                    ->where('status', 'pending')
+                                                                    ->first();
+            }
+
+            $book->extension_request_pending = BookRequest::where('book_id', $book->id)
+                                                    ->where('type', 'extension')
+                                                    ->where('status', 'pending')
+                                                    ->first();
+        }
+
         // Get unique departments for filter dropdown
         $departments = Book::select('department')->distinct()->pluck('department');
 
@@ -60,13 +85,13 @@ class BorrowedBooksController extends Controller
     public function show($id)
     {
         $book = Book::findOrFail($id);
-        
+
         // Check if the book is actually borrowed
         if ($book->status !== 'borrowed') {
             return redirect()->route('borrowed-books.index')
                 ->with('error', 'هذا الكتاب غير مستعار حالياً.');
         }
-        
+
         // Get the current borrower (student) through the most recent approved borrowing request
         $borrower = null;
         $borrowRequest = $book->requests()
@@ -74,216 +99,193 @@ class BorrowedBooksController extends Controller
             ->where('status', 'approved')
             ->orderBy('date_of_request', 'desc')
             ->first();
-            
+
         if ($borrowRequest) {
             $borrower = $borrowRequest->student;
         }
-        
+
+        $book->return_request_pending = null;
+        if ($borrowRequest) {
+            $book->return_request_pending = RetrieveRequest::where("request_id", $borrowRequest->request_id)
+                                                            ->where("status", "pending")
+                                                            ->first();
+        }
+
+        $book->extension_request_pending = BookRequest::where('book_id', $book->id)
+                                                ->where('type', 'extension')
+                                                ->where('status', 'pending')
+                                                ->first();
+
         return view('borrowed_books.show', compact('book', 'borrower', 'borrowRequest'));
-    }
-
-    /**
-     * Process a return request from a student.
-     * This creates a return request that needs admin approval.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function requestReturn(Request $request, $id)
-    {
-        $book = Book::findOrFail($id);
-        $student = $request->user()->student;
-        
-        // Check if the book is actually borrowed by this student
-        $borrowRequest = $book->requests()
-            ->where('student_id', $student->id)
-            ->where('type', 'borrowing')
-            ->where('status', 'approved')
-            ->first();
-            
-        if (!$borrowRequest) {
-            return redirect()->back()
-                ->with('error', 'لا يمكنك طلب إرجاع هذا الكتاب لأنه غير مستعار بواسطتك.');
-        }
-        
-        // Create a return request
-        $returnRequest = new BookRequest();
-        $returnRequest->student_id = $student->id;
-        $returnRequest->book_id = $book->id;
-        $returnRequest->date_of_request = now();
-        $returnRequest->status = 'pending';
-        $returnRequest->type = 'return';
-        $returnRequest->notes = $request->notes ?? 'طلب إرجاع كتاب';
-        $returnRequest->save();
-        
-        return redirect()->back()
-            ->with('success', 'تم إرسال طلب إرجاع الكتاب بنجاح. سيتم مراجعته من قبل أمين المكتبة.');
-    }
-
-    /**
-     * Process a request to extend borrowing period.
-     * This creates an extension request that needs admin approval.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function requestExtension(Request $request, $id)
-    {
-        $book = Book::findOrFail($id);
-        $student = $request->user()->student;
-        
-        // Check if the book is actually borrowed by this student
-        $borrowRequest = $book->requests()
-            ->where('student_id', $student->id)
-            ->where('type', 'borrowing')
-            ->where('status', 'approved')
-            ->first();
-            
-        if (!$borrowRequest) {
-            return redirect()->back()
-                ->with('error', 'لا يمكنك طلب تمديد استعارة هذا الكتاب لأنه غير مستعار بواسطتك.');
-        }
-        
-        // Create an extension request
-        $extensionRequest = new BookRequest();
-        $extensionRequest->student_id = $student->id;
-        $extensionRequest->book_id = $book->id;
-        $extensionRequest->date_of_request = now();
-        $extensionRequest->status = 'pending';
-        $extensionRequest->type = 'extension';
-        $extensionRequest->notes = $request->notes ?? 'طلب تمديد فترة استعارة';
-        $extensionRequest->save();
-        
-        return redirect()->back()
-            ->with('success', 'تم إرسال طلب تمديد فترة الاستعارة بنجاح. سيتم مراجعته من قبل أمين المكتبة.');
     }
 
     /**
      * Admin approves a return request.
      * This is an admin-only action.
      *
-     * @param  int  $requestId
+     * @param  int  $bookId
      * @return \Illuminate\Http\Response
      */
-    public function approveReturn($requestId)
+    public function approveReturn($bookId)
     {
-        $returnRequest = BookRequest::findOrFail($requestId);
-        
-        // Verify this is a return request
-        if ($returnRequest->type !== 'return') {
-            return redirect()->back()
-                ->with('error', 'هذا ليس طلب إرجاع.');
-        }
-        
-        // Update the request status
-        $returnRequest->status = 'approved';
-        $returnRequest->save();
-        
-        // Update the book status
-        $book = $returnRequest->book;
-        $book->status = 'available';
-        $book->save();
-        
-        // Find and update the original borrow request
-        $borrowRequest = BookRequest::where('book_id', $book->id)
-            ->where('student_id', $returnRequest->student_id)
-            ->where('type', 'borrowing')
-            ->where('status', 'approved')
-            ->first();
-            
-        if ($borrowRequest) {
+        DB::beginTransaction();
+        try {
+            $book = Book::findOrFail($bookId);
+
+            $borrowRequest = $book->requests()
+                ->where('type', 'borrowing')
+                ->where('status', 'approved')
+                ->orderBy('date_of_request', 'desc')
+                ->first();
+
+            if (!$borrowRequest) {
+                throw new \Exception('لا يوجد طلب استعارة نشط لهذا الكتاب.');
+            }
+
+            $retrieveRequest = RetrieveRequest::where('request_id', $borrowRequest->request_id)
+                                            ->where('status', 'pending')
+                                            ->firstOrFail();
+
+            // Update the retrieve request status
+            $retrieveRequest->status = 'approved';
+            $retrieveRequest->save();
+
+            // Update the original borrowing request status to completed
             $borrowRequest->status = 'completed';
             $borrowRequest->save();
-            
-            // Update retrieve request if exists
-            if ($borrowRequest->retrieveRequest) {
-                $borrowRequest->retrieveRequest->status = 'completed';
-                $borrowRequest->retrieveRequest->save();
-            }
+
+            // Update the book status
+            $book->status = 'available';
+            $book->save();
+
+            DB::commit();
+
+            // TODO: Send notification to student that return request is approved
+
+            return redirect()->route('borrowed-books.index')
+                ->with('success', 'تم الموافقة على طلب إرجاع الكتاب وتحديث حالة الكتاب بنجاح.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()
+                ->with('error', 'حدث خطأ أثناء الموافقة على طلب الإرجاع: ' . $e->getMessage());
         }
-        
-        return redirect()->route('book-requests.index')
-            ->with('success', 'تم الموافقة على طلب إرجاع الكتاب وتحديث حالة الكتاب بنجاح.');
     }
 
     /**
      * Admin rejects a return request.
      * This is an admin-only action.
      *
-     * @param  int  $requestId
+     * @param  int  $bookId
      * @return \Illuminate\Http\Response
      */
-    public function rejectReturn($requestId)
+    public function rejectReturn($bookId)
     {
-        $returnRequest = BookRequest::findOrFail($requestId);
-        
-        // Verify this is a return request
-        if ($returnRequest->type !== 'return') {
+        DB::beginTransaction();
+        try {
+            $book = Book::findOrFail($bookId);
+
+            $borrowRequest = $book->requests()
+                ->where('type', 'borrowing')
+                ->where('status', 'approved')
+                ->orderBy('date_of_request', 'desc')
+                ->first();
+
+            if (!$borrowRequest) {
+                throw new \Exception('لا يوجد طلب استعارة نشط لهذا الكتاب.');
+            }
+
+            $retrieveRequest = RetrieveRequest::where('request_id', $borrowRequest->request_id)
+                                            ->where('status', 'pending')
+                                            ->firstOrFail();
+
+            // Update the retrieve request status
+            $retrieveRequest->status = 'rejected';
+            $retrieveRequest->save();
+
+            DB::commit();
+
+            // TODO: Send notification to student that return request is rejected
+
+            return redirect()->route('borrowed-books.index')
+                ->with('success', 'تم رفض طلب إرجاع الكتاب.');
+        } catch (\Exception $e) {
+            DB::rollBack();
             return redirect()->back()
-                ->with('error', 'هذا ليس طلب إرجاع.');
+                ->with('error', 'حدث خطأ أثناء رفض طلب الإرجاع: ' . $e->getMessage());
         }
-        
-        // Update the request status
-        $returnRequest->status = 'rejected';
-        $returnRequest->save();
-        
-        return redirect()->route('book-requests.index')
-            ->with('success', 'تم رفض طلب إرجاع الكتاب.');
     }
 
     /**
      * Admin approves an extension request.
      * This is an admin-only action.
      *
-     * @param  int  $requestId
+     * @param  int  $bookId
      * @return \Illuminate\Http\Response
      */
-    public function approveExtension($requestId)
+    public function approveExtension($bookId)
     {
-        $extensionRequest = BookRequest::findOrFail($requestId);
-        
-        // Verify this is an extension request
-        if ($extensionRequest->type !== 'extension') {
+        DB::beginTransaction();
+        try {
+            $book = Book::findOrFail($bookId);
+
+            $extensionRequest = BookRequest::where('book_id', $book->id)
+                                            ->where('type', 'extension')
+                                            ->where('status', 'pending')
+                                            ->firstOrFail();
+
+            // Update the request status
+            $extensionRequest->status = 'approved';
+            $extensionRequest->save();
+
+            // You might want to update the due date of the original borrow request here
+            // This depends on your business logic for extensions
+
+            DB::commit();
+
+            // TODO: Send notification to student that extension request is approved
+
+            return redirect()->route('borrowed-books.index')
+                ->with('success', 'تم الموافقة على طلب تمديد فترة الاستعارة بنجاح.');
+        } catch (\Exception $e) {
+            DB::rollBack();
             return redirect()->back()
-                ->with('error', 'هذا ليس طلب تمديد استعارة.');
+                ->with('error', 'حدث خطأ أثناء الموافقة على طلب التمديد: ' . $e->getMessage());
         }
-        
-        // Update the request status
-        $extensionRequest->status = 'approved';
-        $extensionRequest->save();
-        
-        // You might want to update the due date of the original borrow request here
-        // This depends on your business logic for extensions
-        
-        return redirect()->route('book-requests.index')
-            ->with('success', 'تم الموافقة على طلب تمديد فترة الاستعارة بنجاح.');
     }
 
     /**
      * Admin rejects an extension request.
      * This is an admin-only action.
      *
-     * @param  int  $requestId
+     * @param  int  $bookId
      * @return \Illuminate\Http\Response
      */
-    public function rejectExtension($requestId)
+    public function rejectExtension($bookId)
     {
-        $extensionRequest = BookRequest::findOrFail($requestId);
-        
-        // Verify this is an extension request
-        if ($extensionRequest->type !== 'extension') {
+        DB::beginTransaction();
+        try {
+            $book = Book::findOrFail($bookId);
+
+            $extensionRequest = BookRequest::where('book_id', $book->id)
+                                            ->where('type', 'extension')
+                                            ->where('status', 'pending')
+                                            ->firstOrFail();
+
+            // Update the request status
+            $extensionRequest->status = 'rejected';
+            $extensionRequest->save();
+
+            DB::commit();
+
+            // TODO: Send notification to student that extension request is rejected
+
+            return redirect()->route('borrowed-books.index')
+                ->with('success', 'تم رفض طلب تمديد فترة الاستعارة.');
+        } catch (\Exception $e) {
+            DB::rollBack();
             return redirect()->back()
-                ->with('error', 'هذا ليس طلب تمديد استعارة.');
+                ->with('error', 'حدث خطأ أثناء رفض طلب التمديد: ' . $e->getMessage());
         }
-        
-        // Update the request status
-        $extensionRequest->status = 'rejected';
-        $extensionRequest->save();
-        
-        return redirect()->route('book-requests.index')
-            ->with('success', 'تم رفض طلب تمديد فترة الاستعارة.');
     }
 
     /**
@@ -296,7 +298,7 @@ class BorrowedBooksController extends Controller
     public function search(Request $request)
     {
         $search = $request->get('search');
-        
+
         $borrowedBooks = Book::where('status', 'borrowed')
             ->where(function($q) use ($search) {
                 $q->where('book_name', 'like', "%{$search}%")
@@ -304,7 +306,27 @@ class BorrowedBooksController extends Controller
                   ->orWhere('isbn', 'like', "%{$search}%");
             })
             ->paginate(15);
-            
+
+        foreach ($borrowedBooks as $book) {
+            $latestBorrowRequest = BookRequest::where('book_id', $book->id)
+                                            ->where('type', 'borrowing')
+                                            ->where('status', 'approved')
+                                            ->latest('date_of_request')
+                                            ->first();
+
+            $book->return_request_pending = null;
+            if ($latestBorrowRequest) {
+                $book->return_request_pending = RetrieveRequest::where('request_id', $latestBorrowRequest->request_id)
+                                                                ->where('status', 'pending')
+                                                                ->first();
+            }
+
+            $book->extension_request_pending = BookRequest::where('book_id', $book->id)
+                                                    ->where('type', 'extension')
+                                                    ->where('status', 'pending')
+                                                    ->first();
+        }
+
         // Get unique departments for filter dropdown
         $departments = Book::select('department')->distinct()->pluck('department');
 
@@ -323,7 +345,27 @@ class BorrowedBooksController extends Controller
         $borrowedBooks = Book::where('status', 'borrowed')
             ->where('department', $department)
             ->paginate(15);
-            
+
+        foreach ($borrowedBooks as $book) {
+            $latestBorrowRequest = BookRequest::where('book_id', $book->id)
+                                            ->where('type', 'borrowing')
+                                            ->where('status', 'approved')
+                                            ->latest('date_of_request')
+                                            ->first();
+
+            $book->return_request_pending = null;
+            if ($latestBorrowRequest) {
+                $book->return_request_pending = RetrieveRequest::where('request_id', $latestBorrowRequest->request_id)
+                                                                ->where('status', 'pending')
+                                                                ->first();
+            }
+
+            $book->extension_request_pending = BookRequest::where('book_id', $book->id)
+                                                    ->where('type', 'extension')
+                                                    ->where('status', 'pending')
+                                                    ->first();
+        }
+
         // Get unique departments for filter dropdown
         $departments = Book::select('department')->distinct()->pluck('department');
 
@@ -340,20 +382,41 @@ class BorrowedBooksController extends Controller
     public function getByStudent($studentId)
     {
         $student = Student::findOrFail($studentId);
-        
+
         // Get book IDs borrowed by this student
         $borrowedBookIds = $student->requests()
             ->where('type', 'borrowing')
             ->where('status', 'approved')
             ->pluck('book_id');
-            
+
         $borrowedBooks = Book::whereIn('book_id', $borrowedBookIds)
             ->where('status', 'borrowed')
             ->paginate(15);
-            
+
+        foreach ($borrowedBooks as $book) {
+            $latestBorrowRequest = BookRequest::where('book_id', $book->id)
+                                            ->where('type', 'borrowing')
+                                            ->where('status', 'approved')
+                                            ->latest('date_of_request')
+                                            ->first();
+
+            $book->return_request_pending = null;
+            if ($latestBorrowRequest) {
+                $book->return_request_pending = RetrieveRequest::where('request_id', $latestBorrowRequest->request_id)
+                                                                ->where('status', 'pending')
+                                                                ->first();
+            }
+
+            $book->extension_request_pending = BookRequest::where('book_id', $book->id)
+                                                    ->where('type', 'extension')
+                                                    ->where('status', 'pending')
+                                                    ->first();
+        }
+
         // Get unique departments for filter dropdown
         $departments = Book::select('department')->distinct()->pluck('department');
 
         return view('borrowed_books.index', compact('borrowedBooks', 'departments', 'student'));
     }
 }
+

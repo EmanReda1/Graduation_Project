@@ -1,6 +1,6 @@
-@extends('layouts.app')
-@section('content')
-<div class="container"> <div class="row mb-4"> <div class="col-md-8"> <h1>تفاصيل طلب الاستعارة</h1> </div> <div class="col-md-4 text-end"> <a href="{{ route('borrowing-requests.index') }}" class="btn btn-secondary">العودة إلى طلبات الاستعارة</a> </div> </div>
+@extends("layouts.app")
+@section("content")
+<div class="container"> <div class="row mb-4"> <div class="col-md-8"> <h1>تفاصيل طلب الاستعارة</h1> </div> <div class="col-md-4 text-end"> <a href="{{ route("borrowing-requests.index") }}" class="btn btn-secondary">العودة إلى طلبات الاستعارة</a> </div> </div>
 <div class="card mb-4">
     <div class="card-header bg-primary text-white">
         <h5 class="mb-0">معلومات الطلب #{{ $borrowingRequest->request_id }}</h5>
@@ -20,7 +20,7 @@
         <div class="row">
             <div class="col-md-6 mb-3">
                 <h6 class="fw-bold">رقم التليفون:</h6>
-                <p>{{ $borrowingRequest->student->phone ?? 'غير متوفر' }}</p>
+                <p>{{ $borrowingRequest->student->phone ?? "غير متوفر" }}</p>
             </div>
             <div class="col-md-6 mb-3">
                 <h6 class="fw-bold">اسم الكتاب:</h6>
@@ -42,18 +42,18 @@
         <div class="row">
             <div class="col-md-6 mb-3">
                 <h6 class="fw-bold">تاريخ الطلب:</h6>
-                <p>{{ \Carbon\Carbon::parse($borrowingRequest->date_of_request)->format('d/m/Y') }}</p>
+                <p>{{ \Carbon\Carbon::parse($borrowingRequest->date_of_request)->format("d/m/Y") }}</p>
             </div>
             <div class="col-md-6 mb-3">
                 <h6 class="fw-bold">الحالة:</h6>
                 <p>
-                    @if($borrowingRequest->status == 'pending')
+                    @if($borrowingRequest->status == "pending")
                         <span class="badge bg-warning">قيد الانتظار</span>
-                    @elseif($borrowingRequest->status == 'approved')
+                    @elseif($borrowingRequest->status == "approved")
                         <span class="badge bg-success">تمت الموافقة</span>
-                    @elseif($borrowingRequest->status == 'rejected')
+                    @elseif($borrowingRequest->status == "rejected")
                         <span class="badge bg-danger">مرفوض</span>
-                    @elseif($borrowingRequest->status == 'completed')
+                    @elseif($borrowingRequest->status == "completed")
                         <span class="badge bg-primary">مكتمل</span>
                     @else
                         <span class="badge bg-secondary">{{ $borrowingRequest->status }}</span>
@@ -79,7 +79,7 @@
                     @if($borrowingRequest->documents && count($borrowingRequest->documents) > 0)
                         @foreach($borrowingRequest->documents as $document)
                             <div class="mb-2">
-                                <a href="{{ asset('storage/' . $document->path) }}" class="btn btn-sm btn-outline-primary" target="_blank">
+                                <a href="{{ asset("storage/" . $document->path) }}" class="btn btn-sm btn-outline-primary" target="_blank">
                                     <i class="fas fa-file-pdf"></i> أوراق الاستعارة
                                 </a>
                             </div>
@@ -94,21 +94,23 @@
     <div class="card-footer">
         <div class="d-flex justify-content-between">
             <div>
-                @if($borrowingRequest->status == 'pending')
-                    <form action="{{ route('borrowing-requests.approve', $borrowingRequest->request_id) }}" method="POST" style="display:inline;">
+                @if($borrowingRequest->status == "pending")
+                    <form action="{{ route("borrowing-requests.approve", $borrowingRequest->request_id) }}" method="POST" style="display:inline;">
                         @csrf
                         <button type="submit" class="btn btn-success">قبول</button>
                     </form>
-                    <form action="{{ route('borrowing-requests.reject', $borrowingRequest->request_id) }}" method="POST" style="display:inline;">
+                    <form action="{{ route("borrowing-requests.reject", $borrowingRequest->request_id) }}" method="POST" style="display:inline;">
                         @csrf
                         <button type="submit" class="btn btn-danger">رفض</button>
                     </form>
                 @endif
             </div>
             <div>
-                <a href="{{ route('borrowing-requests.index') }}" class="btn btn-secondary">العودة</a>
+                <a href="{{ route("borrowing-requests.index") }}" class="btn btn-secondary">العودة</a>
             </div>
         </div>
     </div>
 </div>
 </div> @endsection
+
+

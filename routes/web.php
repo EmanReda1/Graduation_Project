@@ -121,9 +121,20 @@ Route::prefix("statistics")->name("statistics.")->group(function () {
 });
 
 
-// Retrieve Requests Routes
 Route::get("/retrieve-requests", [RetrieveRequestController::class, "index"])->name("retrieve-requests.index");
+Route::get("/retrieve-requests/{id}", [RetrieveRequestController::class, "show"])->name("retrieve-requests.show");
 Route::post("/retrieve-requests/{id}/approve", [RetrieveRequestController::class, "approve"])->name("retrieve-requests.approve");
 Route::post("/retrieve-requests/{id}/reject", [RetrieveRequestController::class, "reject"])->name("retrieve-requests.reject");
+
+
+
+
+
+
+// Librarian actions for Borrowed Books
+Route::post("/borrowed-books/{id}/approve-return", [BorrowedBooksController::class, "approveReturn"])->name("borrowed-books.approve-return");
+Route::post("/borrowed-books/{id}/reject-return", [BorrowedBooksController::class, "rejectReturn"])->name("borrowed-books.reject-return");
+Route::post("/borrowed-books/{id}/approve-extension", [BorrowedBooksController::class, "approveExtension"])->name("borrowed-books.approve-extension");
+Route::post("/borrowed-books/{id}/reject-extension", [BorrowedBooksController::class, "rejectExtension"])->name("borrowed-books.reject-extension");
 
 

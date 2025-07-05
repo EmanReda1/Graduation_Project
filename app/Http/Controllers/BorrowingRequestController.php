@@ -9,6 +9,7 @@ use App\Models\Book;
 use App\Models\Notification;
 use Illuminate\Http\Request as HttpRequest;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class BorrowingRequestController extends Controller
 {
@@ -34,6 +35,9 @@ class BorrowingRequestController extends Controller
 
         if ($request->filled("status")) {
             $query->where("status", $request->status);
+        } else {
+            // Default to pending requests if no status filter is applied
+            $query->where("status", "pending");
         }
 
         if ($request->filled("start_date") && $request->filled("end_date")) {
@@ -193,7 +197,7 @@ class BorrowingRequestController extends Controller
             "notes" => $validated["notes"] ?? null,
         ]);
 
-        // If approved, create a retrieve request if it doesn\\'t exist and update book status
+        // If approved, create a retrieve request if it doesn\\\"t exist and update book status
         if ($validated["status"] == "approved") {
             if (!$borrowingRequest->retrieveRequest) {
                 $borrowingRequest->retrieveRequest()->create([
@@ -252,34 +256,48 @@ class BorrowingRequestController extends Controller
      */
     public function approve($id)
     {
-        $borrowingRequest = Request::where("type", "borrowing")->findOrFail($id);
+        DB::beginTransaction();
 
-        // Update the status to approved
-        $borrowingRequest->update(["status" => "approved"]);
+        try {
+            $borrowingRequest = Request::where("type", "borrowing")->findOrFail($id);
 
-        // If approved, create a retrieve request if it doesn\\'t exist and update book status
-        if (!$borrowingRequest->retrieveRequest) {
-            $borrowingRequest->retrieveRequest()->create([
-                "request_id" => $borrowingRequest->request_id,
-                "request_date" => now(),
-                "status" => "approved",
+            // Load the book with a lock to prevent race conditions
+            $book = Book::where("book_id", $borrowingRequest->book_id)->lockForUpdate()->first();
+
+            if (!$book) {
+                DB::rollBack();
+                return redirect()->back()->with("error", "الكتاب غير موجود.");
+            }
+
+            // Check if the book is available
+            if ($book->status !== "available") {
+                DB::rollBack();
+                return redirect()->back()->with("error", "الكتاب غير متاح للاستعارة حالياً.");
+            }
+
+            // Update the status to approved
+            $borrowingRequest->update(["status" => "approved"]);
+
+            // Update book status to borrowed
+            $book->update(["status" => "borrowed"]);
+
+            // Add notification to student
+            Notification::create([
+                "student_id" => $borrowingRequest->student_id,
+                "message" => "تمت الموافقة على طلب استعارة الكتاب " . $book->book_name . ".",
+                "type" => "borrowing_approved",
+                "is_read" => false,
+                "date_time" => now(),
             ]);
+
+            DB::commit();
+
+            return redirect()->route("borrowing-requests.show", $borrowingRequest->request_id)
+                ->with("success", "تمت الموافقة على طلب الاستعارة بنجاح.");
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()->with("error", "حدث خطأ أثناء الموافقة على طلب الاستعارة: " . $e->getMessage());
         }
-
-        // Update book status to borrowed
-        $borrowingRequest->book->update(["status" => "borrowed"]);
-
-        // Add notification to student
-        Notification::create([
-            "student_id" => $borrowingRequest->student_id,
-            "message" => "تمت الموافقة على طلب استعارة الكتاب " . $borrowingRequest->book->book_name . ".",
-            "type" => "borrowing_approved",
-            "is_read" => false,
-            "date_time" => now(),
-        ]);
-
-        return redirect()->route("borrowing-requests.show", $borrowingRequest->request_id)
-            ->with("success", "تمت الموافقة على طلب الاستعارة بنجاح.");
     }
 
     /**
@@ -290,33 +308,48 @@ class BorrowingRequestController extends Controller
      */
     public function reject($id)
     {
-        $borrowingRequest = Request::where("type", "borrowing")->findOrFail($id);
+        DB::beginTransaction();
 
-        // Update the status to rejected
-        $borrowingRequest->update(["status" => "rejected"]);
+        try {
+            $borrowingRequest = Request::where("type", "borrowing")->findOrFail($id);
 
-        // If rejected and book was marked as borrowed for this request, make it available again
-        $activeRequests = Request::where("book_id", $borrowingRequest->book_id)
-            ->where("type", "borrowing")
-            ->where("status", "approved")
-            ->where("request_id", "!=", $borrowingRequest->request_id)
-            ->count();
+            // Update the status to rejected
+            $borrowingRequest->update(["status" => "rejected"]);
 
-        if ($activeRequests == 0) {
-            $borrowingRequest->book->update(["status" => "available"]);
+            // If rejected and book was marked as borrowed for this request, make it available again
+            // We need to check if there are any other active borrowing requests for this book
+            $activeBorrowingRequests = Request::where("book_id", $borrowingRequest->book_id)
+                ->where("type", "borrowing")
+                ->where("status", "approved")
+                ->where("request_id", "!=", $borrowingRequest->request_id)
+                ->count();
+
+            // If no other active borrowing requests, and the book was previously borrowed due to this request,
+            // then set the book status back to available.
+            // We need to fetch the book with a lock to prevent race conditions
+            $book = Book::where("book_id", $borrowingRequest->book_id)->lockForUpdate()->first();
+
+            if ($book && $activeBorrowingRequests == 0 && $book->status == "borrowed") {
+                $book->update(["status" => "available"]);
+            }
+
+            // Add notification to student
+            Notification::create([
+                "student_id" => $borrowingRequest->student_id,
+                "message" => "تم رفض طلب استعارة الكتاب " . $borrowingRequest->book->book_name . ". يرجى التواصل مع إدارة المكتبة.",
+                "type" => "borrowing_rejected",
+                "is_read" => false,
+                "date_time" => now(),
+            ]);
+
+            DB::commit();
+
+            return redirect()->route("borrowing-requests.show", $borrowingRequest->request_id)
+                ->with("success", "تم رفض طلب الاستعارة بنجاح.");
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()->with("error", "حدث خطأ أثناء رفض طلب الاستعارة: " . $e->getMessage());
         }
-
-        // Add notification to student
-        Notification::create([
-            "student_id" => $borrowingRequest->student_id,
-            "message" => "تم رفض طلب استعارة الكتاب " . $borrowingRequest->book->book_name . ". يرجى التواصل مع إدارة المكتبة.",
-            "type" => "borrowing_rejected",
-            "is_read" => false,
-            "date_time" => now(),
-        ]);
-
-        return redirect()->route("borrowing-requests.show", $borrowingRequest->request_id)
-            ->with("success", "تم رفض طلب الاستعارة بنجاح.");
     }
 
     /**
