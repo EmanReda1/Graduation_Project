@@ -7,11 +7,13 @@ use App\Models\BookRequest;
 use App\Models\Book;
 use App\Models\Notification;
 use App\Models\RetrieveRequest;
+use App\Models\Student;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 
 class BookRequestController extends Controller
 {
@@ -96,12 +98,29 @@ class BookRequestController extends Controller
                 ], 401);
             }
 
-            $request->validate([
+            // قواعد التحقق الأساسية
+            $validationRules = [
                 "book_id" => "required|exists:books,book_id",
                 "type" => "required|in:reading,borrowing",
                 "notes" => "nullable|string",
-                 "documents.*" => "nullable|file|mimes:pdf,jpg,jpeg,png|max:2048" // الأوراق اختيارية، حد أقصى 2MB لكل ملف
-            ]);
+                "phone_number" => "nullable|string|max:20", // رقم التليفون اختياري
+            ];
+
+            // إضافة قواعد التحقق للأوراق فقط إذا كان النوع "borrowing"
+            if ($request->type === 'borrowing') {
+                $validationRules["id_card_image"] = "required|file|mimes:jpg,jpeg,png|max:2048"; // صورة البطاقة مطلوبة
+                $validationRules["eagle_seal_document"] = "required|file|mimes:pdf,jpg,jpeg,png|max:2048"; // ورقة ختم النسر مطلوبة
+            }
+
+            $validator = Validator::make($request->all(), $validationRules);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    "status" => "error",
+                    "message" => "خطأ في التحقق من البيانات",
+                    "errors" => $validator->errors()
+                ], 422);
+            }
 
             $existingPendingRequest = BookRequest::where("student_id", $student->student_id)
                 ->where("book_id", $request->book_id)
@@ -116,39 +135,63 @@ class BookRequestController extends Controller
                 ], 400);
             }
 
-             // معالجة رفع الأوراق إذا كانت موجودة
-            $documentPaths = [];
-            if ($request->hasFile('documents')) {
-                foreach ($request->file('documents') as $file) {
-                    // إنشاء اسم فريد للملف
-                    $fileName = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
-
-                    // حفظ الملف في مجلد student_documents
-                    $filePath = $file->storeAs('student_documents', $fileName, 'public');
-
-                    if ($filePath) {
-                        $documentPaths[] = $filePath;
-                    }
-                }
-            }
-
-            // تحديث حقل borrow_docs في جدول الطالب إذا تم رفع أوراق جديدة
-            if (!empty($documentPaths)) {
+            // معالجة رفع الأوراق إذا كان النوع "borrowing"
+            $documentsUploaded = 0;
+            if ($request->type === 'borrowing') {
                 // الحصول على الأوراق الموجودة مسبقاً
                 $existingDocs = $student->borrow_docs ? json_decode($student->borrow_docs, true) : [];
 
-                // إضافة الأوراق الجديدة
-                $allDocs = array_merge($existingDocs, $documentPaths);
+                // التأكد من أن existingDocs هو مصفوفة
+                if (!is_array($existingDocs)) {
+                    $existingDocs = [];
+                }
 
+                $newDocs = $existingDocs;
+                $uploadedFiles = [];
+
+                // معالجة صورة البطاقة
+                if ($request->hasFile('id_card_image')) {
+                    $idCardFile = $request->file('id_card_image');
+                    $idCardFileName = 'id_card_' . $student->student_id . '_' . time() . '.' . $idCardFile->getClientOriginalExtension();
+                    $idCardPath = $idCardFile->storeAs('student_documents', $idCardFileName, 'public');
+
+                    if ($idCardPath) {
+                        // حذف صورة البطاقة القديمة إذا كانت موجودة
+                        if (isset($newDocs['id_card']) && Storage::disk('public')->exists($newDocs['id_card'])) {
+                            Storage::disk('public')->delete($newDocs['id_card']);
+                        }
+                        $newDocs['id_card'] = $idCardPath;
+                        $uploadedFiles[] = 'صورة البطاقة';
+                        $documentsUploaded++;
+                    }
+                }
+
+                // معالجة ورقة ختم النسر
+                if ($request->hasFile('eagle_seal_document')) {
+                    $eagleSealFile = $request->file('eagle_seal_document');
+                    $eagleSealFileName = 'eagle_seal_' . $student->student_id . '_' . time() . '.' . $eagleSealFile->getClientOriginalExtension();
+                    $eagleSealPath = $eagleSealFile->storeAs('student_documents', $eagleSealFileName, 'public');
+
+                    if ($eagleSealPath) {
+                        // حذف ورقة ختم النسر القديمة إذا كانت موجودة
+                        if (isset($newDocs['eagle_seal']) && Storage::disk('public')->exists($newDocs['eagle_seal'])) {
+                            Storage::disk('public')->delete($newDocs['eagle_seal']);
+                        }
+                        $newDocs['eagle_seal'] = $eagleSealPath;
+                        $uploadedFiles[] = 'ورقة ختم النسر';
+                        $documentsUploaded++;
+                    }
+                }
+
+                // تحديث حقل borrow_docs في جدول الطالب
                 /** @var \App\Models\Student $student */
-                // تحديث حقل borrow_docs
-                $student->borrow_docs = json_encode($allDocs);
+                $student->borrow_docs = json_encode($newDocs);
                 $student->save();
 
-                Log::info("Documents uploaded and saved for student: " . $student->student_id);
+                Log::info("Documents uploaded for student: " . $student->student_id . " - Files: " . implode(', ', $uploadedFiles));
             }
 
-
+            // إنشاء طلب الكتاب
             $bookRequest = new BookRequest();
             $bookRequest->student_id = $student->student_id;
             $bookRequest->book_id = $request->book_id;
@@ -178,12 +221,18 @@ class BookRequestController extends Controller
                 Log::warning("Librarian not authenticated in web context for notification.");
             }
 
+            $responseMessage = "تم إنشاء طلب الكتاب بنجاح.";
+            if ($documentsUploaded > 0) {
+                $responseMessage .= " تم رفع " . $documentsUploaded . " ملف(ات) بنجاح.";
+            }
+
             return response()->json([
                 "status" => "success",
-                 "message" => "تم إنشاء طلب الكتاب بنجاح." . (!empty($documentPaths) ? " تم رفع " . count($documentPaths) . " ملف(ات) بنجاح." : ""),
+                "message" => $responseMessage,
                 "data" => [
                     "request" => $bookRequest,
-                    "documents_uploaded" => count($documentPaths)
+                    "documents_uploaded" => $documentsUploaded,
+                    "has_documents" => $request->type === 'borrowing' ? $this->checkStudentDocuments($student) : false
                 ]
             ], 201);
         } catch (ValidationException $e) {
@@ -200,6 +249,56 @@ class BookRequestController extends Controller
             return response()->json([
                 "status" => "error",
                 "message" => "حدث خطأ غير متوقع في إرسال الطلب"
+            ], 500);
+        }
+    }
+
+    /**
+     * Check if student has all required documents
+     *
+     * @param Student $student
+     * @return array
+     */
+    private function checkStudentDocuments($student)
+    {
+        $docs = $student->borrow_docs ? json_decode($student->borrow_docs, true) : [];
+
+        return [
+            'has_id_card' => isset($docs['id_card']) && !empty($docs['id_card']),
+            'has_eagle_seal' => isset($docs['eagle_seal']) && !empty($docs['eagle_seal']),
+            'all_documents_available' => isset($docs['id_card']) && isset($docs['eagle_seal']) && !empty($docs['id_card']) && !empty($docs['eagle_seal'])
+        ];
+    }
+
+    /**
+     * Get student documents status
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getDocumentsStatus(Request $request)
+    {
+        try {
+            $student = Auth::guard("api")->user();
+
+            if (!$student) {
+                return response()->json([
+                    "status" => "error",
+                    "message" => "غير مصرح لك بالوصول. يرجى تسجيل الدخول."
+                ], 401);
+            }
+
+            $documentsStatus = $this->checkStudentDocuments($student);
+
+            return response()->json([
+                "status" => "success",
+                "data" => $documentsStatus
+            ]);
+        } catch (\Exception $e) {
+            Log::error("Error fetching documents status: " . $e->getMessage());
+            return response()->json([
+                "status" => "error",
+                "message" => "حدث خطأ أثناء جلب حالة الأوراق"
             ], 500);
         }
     }
@@ -508,5 +607,4 @@ class BookRequestController extends Controller
         }
     }
 }
-
 

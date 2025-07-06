@@ -73,24 +73,124 @@
 
         <!-- Borrowing Documents Section -->
         <div class="row mt-4">
-            <div class="col-12">
-                <h6 class="fw-bold">الأوراق:</h6>
-                <div class="mt-2">
-                    @if($borrowingRequest->documents && count($borrowingRequest->documents) > 0)
-                        @foreach($borrowingRequest->documents as $document)
-                            <div class="mb-2">
-                                <a href="{{ asset("storage/" . $document->path) }}" class="btn btn-sm btn-outline-primary" target="_blank">
-                                    <i class="fas fa-file-pdf"></i> أوراق الاستعارة
-                                </a>
+    <div class="col-12">
+        <h6 class="fw-bold">الأوراق المطلوبة:</h6>
+        <div class="mt-2">
+            @php
+                // الحصول على أوراق الطالب من حقل borrow_docs
+                $studentDocuments = [];
+                if ($borrowingRequest->student && $borrowingRequest->student->borrow_docs) {
+                    $studentDocuments = json_decode($borrowingRequest->student->borrow_docs, true);
+                }
+            @endphp
+
+            @if(!empty($studentDocuments) && is_array($studentDocuments))
+                <div class="row">
+                    {{-- صورة البطاقة --}}
+                    <div class="col-md-6 mb-3">
+                        <div class="card">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-id-card text-primary"></i>
+                                    صورة البطاقة
+                                </h6>
                             </div>
-                        @endforeach
+                            <div class="card-body">
+                                @if(isset($studentDocuments['id_card']) && !empty($studentDocuments['id_card']))
+                                    <a href="{{ asset('storage/' . $studentDocuments['id_card']) }}"
+                                       class="btn btn-sm btn-outline-primary"
+                                       target="_blank">
+                                        <i class="fas fa-eye"></i>
+                                        عرض صورة البطاقة
+                                    </a>
+                                    <small class="text-muted d-block mt-1">
+                                        {{ basename($studentDocuments['id_card']) }}
+                                    </small>
+                                @else
+                                    <span class="text-muted">
+                                        <i class="fas fa-times-circle text-danger"></i>
+                                        غير متوفرة
+                                    </span>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- ورقة ختم النسر --}}
+                    <div class="col-md-6 mb-3">
+                        <div class="card">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-stamp text-warning"></i>
+                                    ورقة ختم النسر
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                @if(isset($studentDocuments['eagle_seal']) && !empty($studentDocuments['eagle_seal']))
+                                    <a href="{{ asset('storage/' . $studentDocuments['eagle_seal']) }}"
+                                       class="btn btn-sm btn-outline-primary"
+                                       target="_blank">
+                                        <i class="fas fa-file-pdf"></i>
+                                        عرض ورقة ختم النسر
+                                    </a>
+                                    <small class="text-muted d-block mt-1">
+                                        {{ basename($studentDocuments['eagle_seal']) }}
+                                    </small>
+                                @else
+                                    <span class="text-muted">
+                                        <i class="fas fa-times-circle text-danger"></i>
+                                        غير متوفرة
+                                    </span>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- حالة الأوراق --}}
+                <div class="alert alert-info mt-3">
+                    <h6 class="alert-heading">
+                        <i class="fas fa-info-circle"></i>
+                        حالة الأوراق:
+                    </h6>
+                    @php
+                        $hasIdCard = isset($studentDocuments['id_card']) && !empty($studentDocuments['id_card']);
+                        $hasEagleSeal = isset($studentDocuments['eagle_seal']) && !empty($studentDocuments['eagle_seal']);
+                        $allComplete = $hasIdCard && $hasEagleSeal;
+                    @endphp
+
+                    @if($allComplete)
+                        <span class="badge bg-success">
+                            <i class="fas fa-check-circle"></i>
+                            جميع الأوراق متوفرة
+                        </span>
                     @else
-                        <p class="text-muted">لا توجد أوراق مرفقة.</p>
+                        <span class="badge bg-warning">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            أوراق ناقصة
+                        </span>
+                        <small class="d-block mt-1">
+                            الأوراق المفقودة:
+                            @if(!$hasIdCard) صورة البطاقة @endif
+                            @if(!$hasIdCard && !$hasEagleSeal) ، @endif
+                            @if(!$hasEagleSeal) ورقة ختم النسر @endif
+                        </small>
                     @endif
                 </div>
-            </div>
+            @else
+                <div class="alert alert-warning">
+                    <h6 class="alert-heading">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        لا توجد أوراق مرفقة
+                    </h6>
+                    <p class="mb-0">لم يقم الطالب برفع أي أوراق مطلوبة للاستعارة.</p>
+                </div>
+            @endif
         </div>
     </div>
+</div>
+
+
     <div class="card-footer">
         <div class="d-flex justify-content-between">
             <div>
