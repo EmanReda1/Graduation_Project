@@ -15,7 +15,6 @@ return new class extends Migration
             $table->id('visit_id');
             $table->foreignId('student_id')->constrained('students', 'student_id')->onDelete('cascade');
             $table->timestamp('visit_time')->useCurrent();
-            $table->timestamps();
         });
     }
 
