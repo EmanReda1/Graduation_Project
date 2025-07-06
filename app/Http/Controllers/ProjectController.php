@@ -80,6 +80,8 @@ class ProjectController extends Controller
     {
         $validated = $request->validate([
             'project_name' => 'required|string|max:255',
+            'supervisor' => 'required|string|max:255',
+            'project_date' => 'required|date|before_or_equal:today',
             'department' => 'required|string|max:100',
             'status' => 'required|string|in:available,borrowed,archived',
             'place' => 'nullable|string|max:255',
@@ -102,6 +104,8 @@ class ProjectController extends Controller
             'project_name' => $validated['project_name'],
             'department' => $validated['department'],
             'status' => $validated['status'],
+            'supervisor' => $validated['supervisor'],
+            'project_date' => $validated['project_date'],
             'place' => $validated['place'] ?? null,
             'shelf_no' => $validated['shelf_no'] ?? null,
             'sum' => $validated['sum'] ?? null,

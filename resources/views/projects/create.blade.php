@@ -56,6 +56,22 @@
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="form-group">
+                                    <label for="project_name"> مشرف المشروع <span class="text-danger">*</span></label>
+                                    <input type="text" name="supervisor" id="supervisor" class="form-control" value="{{ old('supervisor') }}" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="project_name"> سنة المشروع<span class="text-danger">*</span></label>
+                                    <input type="date" name="project_date" id="project_date" class="form-control" value="{{ old('project_date') }}" required>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
                                     <label for="place">المكان</label>
                                     <input type="text" name="place" id="place" class="form-control" value="{{ old('place') }}">
                                 </div>

@@ -100,6 +100,7 @@ class BookRequestController extends Controller
                 "book_id" => "required|exists:books,book_id",
                 "type" => "required|in:reading,borrowing",
                 "notes" => "nullable|string",
+                 "documents.*" => "nullable|file|mimes:pdf,jpg,jpeg,png|max:2048" // الأوراق اختيارية، حد أقصى 2MB لكل ملف
             ]);
 
             $existingPendingRequest = BookRequest::where("student_id", $student->student_id)
@@ -114,6 +115,39 @@ class BookRequestController extends Controller
                     "message" => "لديك بالفعل طلب معلق لهذا الكتاب من نفس النوع."
                 ], 400);
             }
+
+             // معالجة رفع الأوراق إذا كانت موجودة
+            $documentPaths = [];
+            if ($request->hasFile('documents')) {
+                foreach ($request->file('documents') as $file) {
+                    // إنشاء اسم فريد للملف
+                    $fileName = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+
+                    // حفظ الملف في مجلد student_documents
+                    $filePath = $file->storeAs('student_documents', $fileName, 'public');
+
+                    if ($filePath) {
+                        $documentPaths[] = $filePath;
+                    }
+                }
+            }
+
+            // تحديث حقل borrow_docs في جدول الطالب إذا تم رفع أوراق جديدة
+            if (!empty($documentPaths)) {
+                // الحصول على الأوراق الموجودة مسبقاً
+                $existingDocs = $student->borrow_docs ? json_decode($student->borrow_docs, true) : [];
+
+                // إضافة الأوراق الجديدة
+                $allDocs = array_merge($existingDocs, $documentPaths);
+
+                /** @var \App\Models\Student $student */
+                // تحديث حقل borrow_docs
+                $student->borrow_docs = json_encode($allDocs);
+                $student->save();
+
+                Log::info("Documents uploaded and saved for student: " . $student->student_id);
+            }
+
 
             $bookRequest = new BookRequest();
             $bookRequest->student_id = $student->student_id;
@@ -146,8 +180,11 @@ class BookRequestController extends Controller
 
             return response()->json([
                 "status" => "success",
-                "message" => "تم إنشاء طلب الكتاب بنجاح.",
-                "data" => $bookRequest
+                 "message" => "تم إنشاء طلب الكتاب بنجاح." . (!empty($documentPaths) ? " تم رفع " . count($documentPaths) . " ملف(ات) بنجاح." : ""),
+                "data" => [
+                    "request" => $bookRequest,
+                    "documents_uploaded" => count($documentPaths)
+                ]
             ], 201);
         } catch (ValidationException $e) {
             Log::error("Validation Error for Book Request: " . $e->getMessage());
