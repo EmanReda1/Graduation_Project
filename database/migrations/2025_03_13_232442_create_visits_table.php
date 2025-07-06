@@ -14,8 +14,8 @@ return new class extends Migration
         Schema::create('visits', function (Blueprint $table) {
             $table->id('visit_id');
             $table->foreignId('student_id')->constrained('students', 'student_id')->onDelete('cascade');
-           // $table->$table->foreign('student_id')->references('student_id')->on('students')->onDelete('cascade'); // if student deleted all visits delelted
             $table->timestamp('visit_time')->useCurrent();
+            $table->timestamps();
         });
     }
 
