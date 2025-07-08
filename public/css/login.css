@@ -1,0 +1,108 @@
+/* public/css/login.css */
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap');
+
+/* تطبيق التصميم على صفحة Laravel */
+.login-container {
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: linear-gradient(to bottom, #a8c0da, #3498db);
+    margin: 0;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.login-card {
+    background-color: white;
+    border-radius: 8px;
+    padding: 40px;
+    width: 100%;
+    max-width: 450px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    font-family: 'Cairo', sans-serif;
+}
+
+.login-card .card-header {
+    background: none;
+    border: none;
+    padding: 0;
+    margin-bottom: 30px;
+    font-size: 36px;
+    font-weight: 700;
+    color: #333;
+}
+
+.login-card .form-group {
+    margin-bottom: 20px;
+    text-align: right;
+}
+
+.login-card label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #333;
+    font-size: 22px;
+}
+
+.login-card .form-control {
+    width: 100%;
+    padding: 12px 15px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 16px;
+    transition: border-color 0.3s;
+    box-sizing: border-box;
+}
+
+.login-card .form-control:focus {
+    border-color: #0C8CE9;
+    outline: none;
+    box-shadow: none;
+}
+
+.login-card .btn-primary {
+    background-color: #0C8CE9;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 12px 0;
+    width: 100%;
+    font-size: 24px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    margin-top: 10px;
+}
+
+.login-card .btn-primary:hover {
+    background-color: #0a69ac;
+}
+
+.login-card .btn-link {
+    color: #0C8CE9;
+    text-decoration: none;
+    font-size: 16px;
+    margin-top: 10px;
+}
+
+.login-card .btn-link:hover {
+    color: #0a69ac;
+}
+
+.login-card .form-check {
+    text-align: right;
+    margin-top: 15px;
+}
+
+.login-card .form-check-label {
+    font-size: 16px;
+    color: #333;
+}
+
+.login-card .invalid-feedback {
+    text-align: right;
+    font-size: 14px;
+}

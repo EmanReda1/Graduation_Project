@@ -17,7 +17,7 @@
                 <h3>نظام مكتبة الكلية</h3>
                 <p>مرحباً، {{ Auth::user()->name }}</p>
             </div>
-            <nav class="sidebar-nav">
+            <!--nav class="sidebar-nav">
                 <ul>
                     <li class="active"><a href="{{ route('books.index') }}"><i class="fas fa-book"></i> كل الكتب</a></li>
                     <li><a href="{{ route('students.index') }}"><i class="fas fa-users"></i> كل الطلاب</a></li>
@@ -32,7 +32,7 @@
                     <li><a href="{{ route('statistics.index') }}"><i class="fas fa-chart-bar"></i> إحصائيات</a></li>
                 </ul>
             </nav>
-        </aside>
+        </aside!-->
 
         <!-- المحتوى الرئيسي -->
         <main class="main-content">
