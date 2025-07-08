@@ -78,6 +78,166 @@ class BookRequestController extends Controller
     }
 
     /**
+     * Get student notifications
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getNotifications(Request $request)
+    {
+        try {
+            $student = Auth::guard("api")->user();
+
+            if (!$student) {
+                return response()->json([
+                    "status" => "error",
+                    "message" => "غير مصرح لك بجلب الإشعارات. يرجى تسجيل الدخول."
+                ], 401);
+            }
+
+            $query = Notification::where("student_id", $student->student_id);
+
+            // Filter by read status if provided
+            if ($request->filled("is_read")) {
+                $query->where("is_read", $request->boolean("is_read"));
+            }
+
+            // Filter by type if provided
+            if ($request->filled("type")) {
+                $query->where("type", $request->type);
+            }
+
+            $notifications = $query->orderBy("date_time", "desc")->paginate(15);
+
+            return response()->json([
+                "status" => "success",
+                "data" => $notifications
+            ]);
+        } catch (\Exception $e) {
+            Log::error("Error fetching student notifications: " . $e->getMessage());
+            return response()->json([
+                "status" => "error",
+                "message" => "حدث خطأ أثناء جلب الإشعارات"
+            ], 500);
+        }
+    }
+
+    /**
+     * Mark notification as read
+     *
+     * @param int $notificationId
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function markNotificationAsRead($notificationId)
+    {
+        try {
+            $student = Auth::guard("api")->user();
+
+            if (!$student) {
+                return response()->json([
+                    "status" => "error",
+                    "message" => "غير مصرح لك بتحديث الإشعارات. يرجى تسجيل الدخول."
+                ], 401);
+            }
+
+            $notification = Notification::where("notification_id", $notificationId)
+                ->where("student_id", $student->student_id)
+                ->first();
+
+            if (!$notification) {
+                return response()->json([
+                    "status" => "error",
+                    "message" => "الإشعار غير موجود"
+                ], 404);
+            }
+
+            $notification->is_read = true;
+            $notification->save();
+
+            return response()->json([
+                "status" => "success",
+                "message" => "تم تحديث حالة الإشعار"
+            ]);
+        } catch (\Exception $e) {
+            Log::error("Error marking notification as read: " . $e->getMessage());
+            return response()->json([
+                "status" => "error",
+                "message" => "حدث خطأ أثناء تحديث الإشعار"
+            ], 500);
+        }
+    }
+
+    /**
+     * Mark all notifications as read
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function markAllNotificationsAsRead()
+    {
+        try {
+            $student = Auth::guard("api")->user();
+
+            if (!$student) {
+                return response()->json([
+                    "status" => "error",
+                    "message" => "غير مصرح لك بتحديث الإشعارات. يرجى تسجيل الدخول."
+                ], 401);
+            }
+
+            Notification::where("student_id", $student->student_id)
+                ->where("is_read", false)
+                ->update(["is_read" => true]);
+
+            return response()->json([
+                "status" => "success",
+                "message" => "تم تحديث جميع الإشعارات"
+            ]);
+        } catch (\Exception $e) {
+            Log::error("Error marking all notifications as read: " . $e->getMessage());
+            return response()->json([
+                "status" => "error",
+                "message" => "حدث خطأ أثناء تحديث الإشعارات"
+            ], 500);
+        }
+    }
+
+    /**
+     * Get unread notifications count
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getUnreadNotificationsCount()
+    {
+        try {
+            $student = Auth::guard("api")->user();
+
+            if (!$student) {
+                return response()->json([
+                    "status" => "error",
+                    "message" => "غير مصرح لك بجلب الإشعارات. يرجى تسجيل الدخول."
+                ], 401);
+            }
+
+            $count = Notification::where("student_id", $student->student_id)
+                ->where("is_read", false)
+                ->count();
+
+            return response()->json([
+                "status" => "success",
+                "data" => [
+                    "unread_count" => $count
+                ]
+            ]);
+        } catch (\Exception $e) {
+            Log::error("Error fetching unread notifications count: " . $e->getMessage());
+            return response()->json([
+                "status" => "error",
+                "message" => "حدث خطأ أثناء جلب عدد الإشعارات"
+            ], 500);
+        }
+    }
+
+    /**
      * Create a new book request
      *
      * @param Request $request
@@ -206,6 +366,12 @@ class BookRequestController extends Controller
 
             Log::info("Book request saved successfully.");
 
+            // إرسال إشعار للطالب بتأكيد استلام الطلب
+            $this->sendNotificationToStudent($student->student_id, [
+                'type' => 'request_submitted',
+                'message' => 'تم استلام طلب ' . ($bookRequest->type === 'reading' ? 'قراءة' : 'استعارة') . ' للكتاب "' . $bookRequest->book->book_name . '" وسيتم مراجعته قريباً.'
+            ]);
+
             // Notify librarian about new request
             $librarian = Auth::guard("web")->user(); // Assuming Auth::guard("web")->user() gets the librarian in web context
 
@@ -250,6 +416,128 @@ class BookRequestController extends Controller
                 "status" => "error",
                 "message" => "حدث خطأ غير متوقع في إرسال الطلب"
             ], 500);
+        }
+    }
+
+    /**
+     * Update book request status by librarian (should be called from librarian side)
+     *
+     * @param Request $request
+     * @param int $requestId
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function updateRequestStatus(Request $request, $requestId)
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                "status" => "required|in:approved,rejected",
+                "librarian_notes" => "nullable|string|max:500"
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    "status" => "error",
+                    "message" => "بيانات غير صحيحة",
+                    "errors" => $validator->errors()
+                ], 422);
+            }
+
+            $bookRequest = BookRequest::with('book', 'student')->find($requestId);
+
+            if (!$bookRequest) {
+                return response()->json([
+                    "status" => "error",
+                    "message" => "الطلب غير موجود"
+                ], 404);
+            }
+
+            $oldStatus = $bookRequest->status;
+            $bookRequest->status = $request->status;
+            $bookRequest->librarian_notes = $request->librarian_notes;
+            $bookRequest->save();
+
+            // إرسال إشعار للطالب حسب حالة الطلب
+            $this->sendRequestStatusNotification($bookRequest, $request->status, $request->librarian_notes);
+
+            return response()->json([
+                "status" => "success",
+                "message" => "تم تحديث حالة الطلب بنجاح",
+                "data" => [
+                    "request_id" => $bookRequest->request_id,
+                    "old_status" => $oldStatus,
+                    "new_status" => $bookRequest->status
+                ]
+            ]);
+        } catch (\Exception $e) {
+            Log::error("Error updating request status: " . $e->getMessage());
+            return response()->json([
+                "status" => "error",
+                "message" => "حدث خطأ أثناء تحديث حالة الطلب"
+            ], 500);
+        }
+    }
+
+    /**
+     * Send notification to student based on request status
+     *
+     * @param BookRequest $bookRequest
+     * @param string $status
+     * @param string|null $librarianNotes
+     */
+    private function sendRequestStatusNotification($bookRequest, $status, $librarianNotes = null)
+    {
+        $bookName = $bookRequest->book->book_name ?? 'غير معروف';
+        $requestType = $bookRequest->type === 'reading' ? 'قراءة' : 'استعارة';
+
+        switch ($status) {
+            case 'approved':
+                if ($bookRequest->type === 'borrowing') {
+                    $message = "تم قبول طلب استعارة الكتاب \"$bookName\". الكتاب متاح للاستعارة وسيتم توفيره خلال 3 أيام من تاريخ الموافقة.";
+                    $type = 'borrowing_approved';
+                } else {
+                    $message = "تم قبول طلب قراءة الكتاب \"$bookName\". الكتاب متاح للقراءة وسيتم توفيره خلال يوم واحد من تاريخ الموافقة.";
+                    $type = 'reading_approved';
+                }
+                break;
+
+            case 'rejected':
+                $message = "تم رفض طلب $requestType الكتاب \"$bookName\".";
+                if ($librarianNotes) {
+                    $message .= " السبب: $librarianNotes";
+                }
+                $type = $bookRequest->type . '_rejected';
+                break;
+
+            default:
+                return; // لا نرسل إشعار للحالات الأخرى
+        }
+
+        $this->sendNotificationToStudent($bookRequest->student_id, [
+            'type' => $type,
+            'message' => $message
+        ]);
+    }
+
+    /**
+     * Send notification to student
+     *
+     * @param int $studentId
+     * @param array $notificationData
+     */
+    private function sendNotificationToStudent($studentId, $notificationData)
+    {
+        try {
+            Notification::create([
+                "student_id" => $studentId,
+                "message" => $notificationData['message'],
+                "type" => $notificationData['type'],
+                "is_read" => false,
+                "date_time" => now(),
+            ]);
+
+            Log::info("Notification sent to student: $studentId, Type: " . $notificationData['type']);
+        } catch (\Exception $e) {
+            Log::error("Error sending notification to student: " . $e->getMessage());
         }
     }
 
@@ -369,6 +657,12 @@ class BookRequestController extends Controller
 
             $originalRequest->load("book");
 
+            // إرسال إشعار للطالب بتأكيد استلام طلب الإرجاع
+            $this->sendNotificationToStudent($student->student_id, [
+                'type' => 'return_request_submitted',
+                'message' => 'تم استلام طلب إرجاع الكتاب "' . $originalRequest->book->book_name . '" وسيتم مراجعته من قبل أمين المكتبة.'
+            ]);
+
             $librarian = Auth::guard("web")->user(); // Assuming Auth::guard("web")->user() gets the librarian in web context
             if ($librarian) {
                 Notification::create([
@@ -469,6 +763,12 @@ class BookRequestController extends Controller
 
             $originalRequest->load("book");
 
+            // إرسال إشعار للطالب بتأكيد استلام طلب التمديد
+            $this->sendNotificationToStudent($student->student_id, [
+                'type' => 'extension_request_submitted',
+                'message' => 'تم استلام طلب تمديد فترة استعارة الكتاب "' . $originalRequest->book->book_name . '" وسيتم مراجعته من قبل أمين المكتبة.'
+            ]);
+
             $librarian = Auth::guard("web")->user(); // Assuming Auth::guard("web")->user() gets the librarian in web context
             if ($librarian) {
                 Notification::create([
@@ -534,6 +834,15 @@ class BookRequestController extends Controller
             $bookRequest->delete();
 
             $bookRequest->load("book");
+
+            // إرسال إشعار للطالب بتأكيد إلغاء الطلب
+            $requestType = $bookRequest->type === 'reading' ? 'قراءة' :
+                          ($bookRequest->type === 'borrowing' ? 'استعارة' : 'تمديد');
+
+            $this->sendNotificationToStudent($student->student_id, [
+                'type' => 'request_cancelled',
+                'message' => 'تم إلغاء طلب ' . $requestType . ' الكتاب "' . ($bookRequest->book->book_name ?? 'غير معروف') . '" بنجاح.'
+            ]);
 
             $librarian = Auth::guard("web")->user(); // Assuming Auth::guard("web")->user() gets the librarian in web context
             if ($librarian) {
@@ -607,4 +916,3 @@ class BookRequestController extends Controller
         }
     }
 }
-
