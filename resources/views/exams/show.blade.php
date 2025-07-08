@@ -71,14 +71,14 @@
                                     <th>السنة الأكاديمية:</th>
                                     <td>{{ $exam->formatted_year }}</td>
                                 </tr>
-                                <tr>
+                                <!--tr>
                                     <th>تاريخ الإضافة:</th>
                                     <td>{{ $exam->created_at->format('Y-m-d H:i') }}</td>
                                 </tr>
                                 <tr>
                                     <th>آخر تحديث:</th>
                                     <td>{{ $exam->updated_at->format('Y-m-d H:i') }}</td>
-                                </tr>
+                                </tr!-->
                             </table>
                         </div>
                     </div>
