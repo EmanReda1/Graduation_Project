@@ -87,12 +87,12 @@ class BookController extends Controller
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
-        // Handle image upload
-        if ($request->hasFile('image')) {
-            $imageName = time().'.'.$request->image->extension();
-            $request->image->move(public_path('images/books'), $imageName);
-            $validated['image'] = 'images/books/' . $imageName;
-        }
+         // Handle image upload
+    if ($request->hasFile('image')) {
+        // Use Laravel Storage - أسهل وأأمن
+        $imagePath = $request->file('image')->store('images/books', 'public');
+        $validated['image'] = $imagePath;
+    }
 
         // Create new book
         $book = Book::create($validated);

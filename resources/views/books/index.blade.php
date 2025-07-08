@@ -106,7 +106,7 @@
                                 <tr>
                                     <td>
                                         @if ($book->image)
-                                            <img src="{{ asset($book->image) }}" alt="{{ $book->book_name }}"
+                                            <img src="{{ asset('storage/' . $book->image) }}" alt="{{ $book->book_name }}"
                                                 class="img-thumbnail" width="50" height="50"
                                                 style="object-fit: cover;">
                                         @else
