@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Book;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class BookController extends Controller
 {
@@ -87,12 +88,12 @@ class BookController extends Controller
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
-         // Handle image upload
-    if ($request->hasFile('image')) {
-        // Use Laravel Storage - أسهل وأأمن
-        $imagePath = $request->file('image')->store('images/books', 'public');
-        $validated['image'] = $imagePath;
-    }
+        // Handle image upload
+        if ($request->hasFile('image')) {
+            // Use Laravel Storage - أسهل وأأمن
+            $imagePath = $request->file('image')->store('images/books', 'public');
+            $validated['image'] = $imagePath;
+        }
 
         // Create new book
         $book = Book::create($validated);
@@ -165,13 +166,13 @@ class BookController extends Controller
         // Handle image upload
         if ($request->hasFile('image')) {
             // Delete old image if exists
-            if ($book->image && file_exists(public_path($book->image))) {
-                unlink(public_path($book->image));
+            if ($book->image && Storage::disk('public')->exists($book->image)) {
+                Storage::disk('public')->delete($book->image);
             }
 
-            $imageName = time().'.'.$request->image->extension();
-            $request->image->move(public_path('images/books'), $imageName);
-            $validated['image'] = 'images/books/' . $imageName;
+            // Store new image using Laravel Storage
+            $imagePath = $request->file('image')->store('images/books', 'public');
+            $validated['image'] = $imagePath;
         }
 
         // Update book
