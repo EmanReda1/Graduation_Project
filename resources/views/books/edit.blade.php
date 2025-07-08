@@ -148,7 +148,7 @@
                             <label for="image" class="form-label">صورة الكتاب</label>
                             @if($book->image)
                                 <div class="mb-2">
-                                    <img src="{{ asset($book->image) }}" alt="{{ $book->book_name }}" class="img-thumbnail" style="max-height: 100px;">
+                                    <img src="{{ asset('storage/' . $book->image) }}" alt="{{ $book->book_name }}" class="img-thumbnail" style="max-height: 100px;">
                                 </div>
                             @endif
                             <input type="file" class="form-control @error('image') is-invalid @enderror" id="image" name="image">

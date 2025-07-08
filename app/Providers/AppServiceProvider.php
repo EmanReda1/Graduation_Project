@@ -24,5 +24,12 @@ class AppServiceProvider extends ServiceProvider
         if (config("app.env") === "production") {
             URL::forceScheme("https" );
         }
+
+         if (!file_exists(public_path('storage'))) {
+        app('files')->link(
+            storage_path('app/public'),
+            public_path('storage')
+        );
+    }
     }
 }
