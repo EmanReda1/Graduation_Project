@@ -102,8 +102,8 @@
                                                     class="btn btn-danger btn-block">
                                                     <i class="fas fa-download"></i> تحميل PDF
                                                 </a>
-                                                <a href="{{ Storage::url($project->pdf) }}" target="_blank"
-                                                    class="btn btn-outline-danger btn-block mt-2">
+                                                <a href="{{ str_replace('/storage/https:', 'https:', Storage::disk('public')->url($project->pdf)) }}"
+                                                    target="_blank" class="btn btn-outline-danger btn-block mt-2">
                                                     <i class="fas fa-eye"></i> عرض PDF
                                                 </a>
                                             </div>
