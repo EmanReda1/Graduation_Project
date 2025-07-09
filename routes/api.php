@@ -61,13 +61,19 @@ Route::prefix("v1")->group(function () {
         Route::get("recent", [BookController::class, "recent"]);
         Route::get("search", [BookController::class, "search"]);
         Route::get("department/{department}", [BookController::class, "byDepartment"]);
+         Route::get("{id}/status", [BookController::class, "status"]); // New route for book status
         Route::get("{id}", [BookController::class, "show"]);
+
+
 
         // Book reviews
         Route::get("{bookId}/reviews", [ReviewController::class, "index"]);
         Route::post("{bookId}/reviews", [ReviewController::class, "store"]);
         Route::get("{bookId}/reviews/statistics", [ReviewController::class, "statistics"]);
         Route::get("{bookId}/can-review", [ReviewController::class, "canReview"]);
+
+
+
     });
 
 
