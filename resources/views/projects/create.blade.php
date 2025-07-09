@@ -56,17 +56,16 @@
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label for="project_name"> مشرف المشروع <span class="text-danger">*</span></label>
+                                    <label for="supervisor">مشرف المشروع <span class="text-danger">*</span></label>
                                     <input type="text" name="supervisor" id="supervisor" class="form-control" value="{{ old('supervisor') }}" required>
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label for="project_name"> سنة المشروع<span class="text-danger">*</span></label>
+                                    <label for="project_date">سنة المشروع <span class="text-danger">*</span></label>
                                     <input type="date" name="project_date" id="project_date" class="form-control" value="{{ old('project_date') }}" required>
                                 </div>
                             </div>
-
                         </div>
 
                         <div class="row">
@@ -85,7 +84,7 @@
                         </div>
 
                         <div class="row">
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <div class="form-group">
                                     <label for="status">الحالة <span class="text-danger">*</span></label>
                                     <select name="status" id="status" class="form-control" required>
@@ -104,14 +103,24 @@
                                     </select>
                                 </div>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <div class="form-group">
                                     <label for="image">صورة المشروع</label>
                                     <div class="custom-file">
-                                        <input type="file" name="image" id="image" class="custom-file-input">
+                                        <input type="file" name="image" id="image" class="custom-file-input" accept="image/*">
                                         <label class="custom-file-label" for="image">اختر صورة</label>
                                     </div>
                                     <small class="form-text text-muted">الصيغ المدعومة: JPG, PNG, GIF. الحد الأقصى للحجم: 2MB</small>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="pdf">ملف PDF للمشروع</label>
+                                    <div class="custom-file">
+                                        <input type="file" name="pdf" id="pdf" class="custom-file-input" accept=".pdf">
+                                        <label class="custom-file-label" for="pdf">اختر ملف PDF</label>
+                                    </div>
+                                    <small class="form-text text-muted">الصيغة المدعومة: PDF فقط. الحد الأقصى للحجم: 10MB</small>
                                 </div>
                             </div>
                         </div>

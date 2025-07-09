@@ -60,6 +60,21 @@
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="form-group">
+                                    <label for="supervisor">مشرف المشروع <span class="text-danger">*</span></label>
+                                    <input type="text" name="supervisor" id="supervisor" class="form-control" value="{{ old('supervisor', $project->supervisor) }}" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="project_date">سنة المشروع <span class="text-danger">*</span></label>
+                                    <input type="date" name="project_date" id="project_date" class="form-control" value="{{ old('project_date', $project->project_date) }}" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
                                     <label for="place">المكان</label>
                                     <input type="text" name="place" id="place" class="form-control" value="{{ old('place', $project->place) }}">
                                 </div>
@@ -73,7 +88,7 @@
                         </div>
 
                         <div class="row">
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <div class="form-group">
                                     <label for="status">الحالة <span class="text-danger">*</span></label>
                                     <select name="status" id="status" class="form-control" required>
@@ -92,11 +107,11 @@
                                     </select>
                                 </div>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <div class="form-group">
                                     <label for="image">صورة المشروع</label>
                                     <div class="custom-file">
-                                        <input type="file" name="image" id="image" class="custom-file-input">
+                                        <input type="file" name="image" id="image" class="custom-file-input" accept="image/*">
                                         <label class="custom-file-label" for="image">اختر صورة</label>
                                     </div>
                                     <small class="form-text text-muted">الصيغ المدعومة: JPG, PNG, GIF. الحد الأقصى للحجم: 2MB</small>
@@ -104,9 +119,33 @@
                                     @if($project->image)
                                         <div class="mt-2">
                                             <div class="d-flex align-items-center">
-                                                <img src="{{ asset($project->image) }}" alt="{{ $project->project_name }}" class="img-thumbnail" style="max-height: 100px; max-width: 100px;">
+                                                <img src="{{ Storage::url($project->image) }}" alt="{{ $project->project_name }}" class="img-thumbnail" style="max-height: 100px; max-width: 100px;">
                                                 <div class="ml-3">
                                                     <span class="text-muted">الصورة الحالية</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    @endif
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="pdf">ملف PDF للمشروع</label>
+                                    <div class="custom-file">
+                                        <input type="file" name="pdf" id="pdf" class="custom-file-input" accept=".pdf">
+                                        <label class="custom-file-label" for="pdf">اختر ملف PDF</label>
+                                    </div>
+                                    <small class="form-text text-muted">الصيغة المدعومة: PDF فقط. الحد الأقصى للحجم: 10MB</small>
+
+                                    @if($project->pdf)
+                                        <div class="mt-2">
+                                            <div class="d-flex align-items-center">
+                                                <i class="fas fa-file-pdf text-danger" style="font-size: 2em;"></i>
+                                                <div class="ml-3">
+                                                    <span class="text-muted">الملف الحالي</span><br>
+                                                    <a href="{{ Storage::url($project->pdf) }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                                        <i class="fas fa-download"></i> تحميل PDF
+                                                    </a>
                                                 </div>
                                             </div>
                                         </div>

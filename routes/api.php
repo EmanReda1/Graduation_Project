@@ -120,6 +120,8 @@ Route::prefix("v1")->group(function () {
         Route::get("department/{department}", [ProjectController::class, "byDepartment"]);
         Route::get("year/{year}", [ProjectController::class, "byYear"]);
         Route::get("{id}", [ProjectController::class, "show"]);
+        Route::get('/projects/{id}/pdf', [ProjectController::class, 'viewPdf'])->name('api.projects.pdf');
+       //Route::get('/projects/{id}/download-pdf', [ProjectController::class, 'downloadPdf'])->name('api.projects.download-pdf');
     });
     // Notifications Routes
     Route::prefix("notifications")->group(function () {

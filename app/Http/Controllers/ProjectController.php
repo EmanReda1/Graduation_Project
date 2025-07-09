@@ -31,10 +31,10 @@ class ProjectController extends Controller
 
         if ($request->filled('search')) {
             $search = $request->search;
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('project_name', 'like', "%{$search}%")
-                  ->orWhere('department', 'like', "%{$search}%")
-                  ->orWhere('place', 'like', "%{$search}%");
+                    ->orWhere('department', 'like', "%{$search}%")
+                    ->orWhere('place', 'like', "%{$search}%");
             });
         }
 
@@ -88,6 +88,7 @@ class ProjectController extends Controller
             'shelf_no' => 'nullable|string|max:50',
             'sum' => 'nullable|string',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'pdf' => 'nullable|file|mimes:pdf|max:10240', // 10MB max
         ]);
 
         // Handle image upload
@@ -95,8 +96,19 @@ class ProjectController extends Controller
         if ($request->hasFile('image')) {
             $image = $request->file('image');
             $imageName = time() . '.' . $image->getClientOriginalExtension();
-            $image->move(public_path('images/projects'), $imageName);
-            $imagePath = 'images/projects/' . $imageName;
+
+            // Store in storage/app/public/images/projects
+            $imagePath = $image->storeAs('images/projects', $imageName, 'public');
+        }
+
+        // Handle PDF upload
+        $pdfPath = null;
+        if ($request->hasFile('pdf')) {
+            $pdf = $request->file('pdf');
+            $pdfName = time() . '_' . $pdf->getClientOriginalName();
+
+            // Store in storage/app/public/pdfs/projects
+            $pdfPath = $pdf->storeAs('pdfs/projects', $pdfName, 'public');
         }
 
         // Create project
@@ -110,6 +122,7 @@ class ProjectController extends Controller
             'shelf_no' => $validated['shelf_no'] ?? null,
             'sum' => $validated['sum'] ?? null,
             'image' => $imagePath,
+            'pdf' => $pdfPath,
         ]);
 
         return redirect()->route('projects.show', $project->project_id)
@@ -173,21 +186,32 @@ class ProjectController extends Controller
             'shelf_no' => 'nullable|string|max:50',
             'sum' => 'nullable|string',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'pdf' => 'nullable|file|mimes:pdf|max:10240', // 10MB max
         ]);
 
         // Handle image upload
         if ($request->hasFile('image')) {
             // Delete old image if exists
-            if ($project->image && File::exists(public_path($project->image))) {
-                File::delete(public_path($project->image));
+            if ($project->image && Storage::disk('public')->exists($project->image)) {
+                Storage::disk('public')->delete($project->image);
             }
 
             $image = $request->file('image');
             $imageName = time() . '.' . $image->getClientOriginalExtension();
-            $image->move(public_path('images/projects'), $imageName);
-            $validated['image'] = 'images/projects/' . $imageName;
+            $validated['image'] = $image->storeAs('images/projects', $imageName, 'public');
         }
 
+        // Handle PDF upload
+        if ($request->hasFile('pdf')) {
+            // Delete old PDF if exists
+            if ($project->pdf && Storage::disk('public')->exists($project->pdf)) {
+                Storage::disk('public')->delete($project->pdf);
+            }
+
+            $pdf = $request->file('pdf');
+            $pdfName = time() . '_' . $pdf->getClientOriginalName();
+            $validated['pdf'] = $pdf->storeAs('pdfs/projects', $pdfName, 'public');
+        }
         // Update project
         $project->update($validated);
 
@@ -206,8 +230,13 @@ class ProjectController extends Controller
         $project = Project::findOrFail($id);
 
         // Delete image if exists
-        if ($project->image && File::exists(public_path($project->image))) {
-            File::delete(public_path($project->image));
+        if ($project->image && Storage::disk('public')->exists($project->image)) {
+            Storage::disk('public')->delete($project->image);
+        }
+
+        // Delete PDF if exists
+        if ($project->pdf && Storage::disk('public')->exists($project->pdf)) {
+            Storage::disk('public')->delete($project->pdf);
         }
 
         // Delete project
@@ -216,6 +245,23 @@ class ProjectController extends Controller
         return redirect()->route('projects.index')
             ->with('success', 'تم حذف المشروع بنجاح.');
     }
+
+    /**
+     * Download project PDF.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    /**public function downloadPdf($id)
+    {
+        $project = Project::findOrFail($id);
+
+        if (!$project->pdf || !File::exists(public_path($project->pdf))) {
+            abort(404, 'PDF file not found');
+        }
+
+        return response()->download(public_path($project->pdf));
+    }**/
 
     /**
      * Search for projects.

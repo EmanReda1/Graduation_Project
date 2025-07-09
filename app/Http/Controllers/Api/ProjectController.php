@@ -8,6 +8,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Response;
 
 class ProjectController extends Controller
 {
@@ -58,7 +60,9 @@ class ProjectController extends Controller
                     'status' => $project->status,
                     'supervisor' => $project->supervisor,
                     'project_date' => $project->project_date,
-                    'image' => $project->image ? asset($project->image) : null,
+                    'image' => $project->image ? asset('storage/' . $project->image) : null,
+                    'pdf_available' => !empty($project->pdf),
+                    'pdf_url' => $project->pdf ? route('api.projects.pdf', $project->project_id) : null,
                     'place' => $project->place,
                     'shelf_no' => $project->shelf_no
                 ];
@@ -93,10 +97,10 @@ class ProjectController extends Controller
      * @param int $id
      * @return \Illuminate\Http\JsonResponse
      */
-      public function show($id)
+    public function show($id)
     {
         try {
-            // Attempt to get authenticated student for favorited status, but don\"t require it
+            // Attempt to get authenticated student for favorited status, but don't require it
             $student = null;
             try {
                 $student = JWTAuth::parseToken()->authenticate();
@@ -117,7 +121,7 @@ class ProjectController extends Controller
             $imageUrl = null;
             if (isset($project->image) && !empty($project->image)) {
                 try {
-                    $imageUrl = asset($project->image);
+                    $imageUrl = asset('storage/' . $project->image);
                 } catch (\Exception $e) {
                     $imageUrl = null; // Fallback if asset() fails
                 }
@@ -135,7 +139,9 @@ class ProjectController extends Controller
                     'supervisor' => $project->supervisor,
                     'project_date' => $project->project_date,
                     'summary' => $project->summary,
-                    'image' => $imageUrl, // Reverted to 'image'
+                    'image' => $imageUrl,
+                    'pdf_available' => !empty($project->pdf),
+                    'pdf_url' => $project->pdf ? route('api.projects.pdf', $project->project_id) : null,
                     'created_at' => $project->created_at,
                     'updated_at' => $project->updated_at
                 ]
@@ -151,6 +157,87 @@ class ProjectController extends Controller
         }
     }
 
+    /**
+     * View/Download project PDF
+     *
+     * @param int $id
+     * @return \Illuminate\Http\Response
+     */
+    public function viewPdf($id)
+    {
+        try {
+            $project = Project::find($id);
+
+            if (!$project) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'المشروع غير موجود'
+                ], 404);
+            }
+
+            if (!$project->pdf || !Storage::disk('public')->exists($project->pdf)) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'ملف PDF غير موجود'
+                ], 404);
+            }
+
+            $filePath = Storage::disk('public')->path($project->pdf);
+            $fileName = $project->project_name . '.pdf';
+
+            return Response::file($filePath, [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'inline; filename="' . $fileName . '"'
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error viewing PDF: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'حدث خطأ في عرض ملف PDF'
+            ], 500);
+        }
+    }
+
+    /**
+     * Download project PDF
+     *
+     * @param int $id
+     * @return \Illuminate\Http\Response
+     */
+
+   /*public function downloadPdf($id)
+    {
+        try {
+            $project = Project::find($id);
+
+            if (!$project) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'المشروع غير موجود'
+                ], 404);
+            }
+
+            if (!$project->pdf || !Storage::disk('public')->exists($project->pdf)) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'ملف PDF غير موجود'
+                ], 404);
+            }
+
+            $filePath = Storage::disk('public')->path($project->pdf);
+            $fileName = $project->project_name . '.pdf';
+
+            return Response::download($filePath, $fileName);
+
+        } catch (\Exception $e) {
+            Log::error('Error downloading PDF: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'حدث خطأ في تحميل ملف PDF'
+            ], 500);
+        }
+    }*/
 
     /**
      * Get projects by department
@@ -159,8 +246,7 @@ class ProjectController extends Controller
      * @param string $department
      * @return \Illuminate\Http\JsonResponse
      */
-
-     public function byDepartment(Request $request, $department)
+    public function byDepartment(Request $request, $department)
     {
         $request->merge(['department' => $department]);
         return $this->index($request);
@@ -223,7 +309,9 @@ class ProjectController extends Controller
                     'status' => $project->status,
                     'supervisor' => $project->supervisor,
                     'project_date' => $project->project_date,
-                    'image' => $project->image ? asset($project->image) : null,
+                    'image' => $project->image ? asset('storage/' . $project->image) : null,
+                    'pdf_available' => !empty($project->pdf),
+                    'pdf_url' => $project->pdf ? route('api.projects.pdf', $project->project_id) : null,
                     'created_at' => $project->created_at
                 ];
             });
@@ -273,6 +361,7 @@ class ProjectController extends Controller
             $totalProjects = Project::count();
             $availableProjects = Project::where('status', 'available')->count();
             $unavailableProjects = Project::where('status', 'unavailable')->count();
+            $projectsWithPdf = Project::whereNotNull('pdf')->where('pdf', '!=', '')->count();
 
             // Projects by department
             $projectsByDepartment = Project::selectRaw('department, COUNT(*) as count')
@@ -303,6 +392,7 @@ class ProjectController extends Controller
                     'total_projects' => $totalProjects,
                     'available_projects' => $availableProjects,
                     'unavailable_projects' => $unavailableProjects,
+                    'projects_with_pdf' => $projectsWithPdf,
                     'projects_by_department' => $projectsByDepartment,
                     'projects_by_year' => $projectsByYear
                 ]
@@ -316,4 +406,3 @@ class ProjectController extends Controller
         }
     }
 }
-
