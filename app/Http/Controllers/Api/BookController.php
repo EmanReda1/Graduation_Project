@@ -208,7 +208,6 @@ class BookController extends Controller
                 // Find the latest approved borrowing request for this book
                 $latestBorrowRequest = BookRequest::where("book_id", $book->book_id)
                                                 ->where("type", "borrowing")
-                                                ->where("status", "approved")
                                                 ->latest("date_of_request")
                                                 ->first();
 
@@ -218,21 +217,11 @@ class BookController extends Controller
                 } else {
                     $bookStatus["message"] = "الكتاب مستعار حالياً. لا يوجد تاريخ متوقع لتوفره.";
                 }
-            } elseif ($book->status === "reserved") {
-                // Find the latest approved reading request for this book
-                $latestReadingRequest = BookRequest::where("book_id", $book->book_id)
-                                                ->where("type", "reading")
-                                                ->where("status", "approved")
-                                                ->latest("date_of_request")
-                                                ->first();
+            } elseif ($book->status === "in-reading") {
 
-                if ($latestReadingRequest && $latestReadingRequest->due_date) {
-                    $bookStatus["expected_available_date"] = Carbon::parse($latestReadingRequest->due_date)->addDay()->format("Y-m-d");
-                    $bookStatus["message"] = "الكتاب محجوز حالياً. من المتوقع أن يتوفر في: " . $bookStatus["expected_available_date"];
-                } else {
-                    $bookStatus["message"] = "الكتاب محجوز حالياً. لا يوجد تاريخ متوقع لتوفره.";
+                    $bookStatus["message"] = " الكتاب محجوز حالياً. من المتوقع أن يتوفر خلال يوم" ;
                 }
-            } elseif ($book->status === "available") {
+             elseif ($book->status === "available") {
                 $bookStatus["message"] = "الكتاب متاح حالياً.";
             } else {
                 $bookStatus["message"] = "حالة الكتاب: " . $book->status;
