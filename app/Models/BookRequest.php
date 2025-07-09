@@ -24,6 +24,12 @@ class BookRequest extends Model
         'notes',
         'status',
         'type',
+        'delivered_at',
+        'delivered_by',
+        'returned_at',
+        'returned_to',
+        'cancelled_at',
+        'cancellation_reason',
     ];
 
     /**
@@ -42,6 +48,9 @@ class BookRequest extends Model
         'date_of_request' => 'date',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
+        'delivered_at' => 'datetime',
+        'returned_at' => 'datetime',
+        'cancelled_at' => 'datetime',
     ];
 
     /**

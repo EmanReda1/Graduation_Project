@@ -9,6 +9,15 @@ class Book extends Model
 
     protected $primaryKey = 'book_id';
 
+    /**
+     * Get the route key for the model.
+     *
+     * @return string
+     */
+    /*public function getRouteKeyName()
+    {
+        return 'book_id';
+    }*/
 
     protected $fillable = [
         'book_name',
@@ -26,6 +35,8 @@ class Book extends Model
         'release_date',
         'library_date',
         'image',
+        'reservation_date',
+        'borrowed_date',
     ];
 
 
@@ -33,6 +44,8 @@ class Book extends Model
         'release_date' => 'date',
         'library_date' => 'date',
         'price' => 'decimal:2',
+        'reservation_date' => 'datetime',
+        'borrowed_date' => 'datetime',
     ];
 
 
@@ -109,4 +122,3 @@ class Book extends Model
         });
     }
 }
-

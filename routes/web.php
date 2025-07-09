@@ -70,14 +70,12 @@ Route::post("/reading-records/{id}/reject-return", [ReadingRecordController::cla
 Route::get("/borrowing-records", [BorrowingRecordController::class, "index"])->name("borrowing-records.index");
 Route::get("/borrowing-records/{id}", [BorrowingRecordController::class, "show"])->name("borrowing-records.show");
 
-// Borrowed Books Routes (Currently borrowed books)
 Route::get("/borrowed-books", [BorrowedBooksController::class, "index"])->name("borrowed-books.index");
-Route::get("/borrowed-books/{id}", [BorrowedBooksController::class, "show"])->name("borrowed-books.show");
-Route::post("/borrowed-books/{id}/return", [BorrowedBooksController::class, "returnBook"])->name("borrowed-books.return");
-Route::post("/borrowed-books/{id}/extend", [BorrowedBooksController::class, "extendBorrowing"])->name("borrowed-books.extend");
 Route::get("/borrowed-books/search", [BorrowedBooksController::class, "search"])->name("borrowed-books.search");
 Route::get("/borrowed-books/department/{department}", [BorrowedBooksController::class, "getByDepartment"])->name("borrowed-books.department");
 Route::get("/borrowed-books/student/{id}", [BorrowedBooksController::class, "getByStudent"])->name("borrowed-books.student");
+Route::get("/borrowed-books/{id}", [BorrowedBooksController::class, "show"])->name("borrowed-books.show");
+
 
 /// Reading Requests Routes
 Route::get("/reading-requests", [ReadingRequestController::class, "index"])->name("reading-requests.index");
@@ -92,6 +90,8 @@ Route::get("/borrowing-requests", [BorrowingRequestController::class, "index"])-
 Route::get("/borrowing-requests/{id}", [BorrowingRequestController::class, "show"])->name("borrowing-requests.show");
 Route::post("/borrowing-requests/{id}/approve", [BorrowingRequestController::class, "approve"])->name("borrowing-requests.approve");
 Route::post("/borrowing-requests/{id}/reject", [BorrowingRequestController::class, "reject"])->name("borrowing-requests.reject");
+Route::post("/borrowing-requests/{id}/deliver", [BorrowingRequestController::class, "deliver"])->name("borrowing-requests.deliver");
+Route::post("/borrowing-requests/{id}/return", [BorrowingRequestController::class, "returnBook"])->name("borrowing-requests.return");
 Route::get("/borrowing-requests/search", [BorrowingRequestController::class, "search"])->name("borrowing-requests.search");
 Route::get("/borrowing-requests/student/{id}", [BorrowingRequestController::class, "getByStudent"])->name("borrowing-requests.student");
 
@@ -136,5 +136,3 @@ Route::post("/borrowed-books/{id}/approve-return", [BorrowedBooksController::cla
 Route::post("/borrowed-books/{id}/reject-return", [BorrowedBooksController::class, "rejectReturn"])->name("borrowed-books.reject-return");
 Route::post("/borrowed-books/{id}/approve-extension", [BorrowedBooksController::class, "approveExtension"])->name("borrowed-books.approve-extension");
 Route::post("/borrowed-books/{id}/reject-extension", [BorrowedBooksController::class, "rejectExtension"])->name("borrowed-books.reject-extension");
-
-

@@ -67,6 +67,16 @@
                     <p>{{ \Carbon\Carbon::parse($borrowRequest->date_of_request)->format("d/m/Y") }}</p>
                 </div>
             </div>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <h6 class="fw-bold">تاريخ التسليم:</h6>
+                    <p>{{ $borrowRequest->delivered_at ? \Carbon\Carbon::parse($borrowRequest->delivered_at)->format("d/m/Y H:i") : "-" }}</p>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <h6 class="fw-bold">تاريخ الإرجاع:</h6>
+                    <p>{{ $borrowRequest->returned_at ? \Carbon\Carbon::parse($borrowRequest->returned_at)->format("d/m/Y H:i") : "-" }}</p>
+                </div>
+            </div>
             @endif
 
             <div class="card-footer">
@@ -104,7 +114,4 @@
     </div>
 </div>
 @endsection
-
-
-
 

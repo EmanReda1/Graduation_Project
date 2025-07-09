@@ -34,41 +34,59 @@
                             <tr>
                                 <th>التفاصيل</th>
                                 <th>اسم الكتاب</th>
-                                <th>المؤلف</th>
-                                <th>القسم</th>
+                                <th>اسم الطالب</th>
+                                <th>تاريخ التسليم</th>
+                                <th>تاريخ الإرجاع</th>
                                 <th>الحالة</th>
                                 <th>الإجراءات</th>
                             </tr>
                         </thead>
                         <tbody>
                             @foreach($borrowedBooks as $book)
+                                @php
+                                    $latestBorrowRequest = App\Models\BookRequest::where("book_id", $book->id)
+                                                                ->where("type", "borrowing")
+                                                                ->where("status", "approved")
+                                                                ->latest("date_of_request")
+                                                                ->first();
+                                    $borrower = $latestBorrowRequest ? $latestBorrowRequest->student : null;
+                                @endphp
                                 <tr>
                                     <td>
                                         <a href="{{ route("borrowed-books.show", $book->book_id) }}" class="btn btn-sm btn-primary">عرض</a>
                                     </td>
                                     <td>{{ $book->book_name }}</td>
-                                    <td>{{ $book->author }}</td>
-                                    <td>{{ $book->department }}</td>
+                                    <td>
+                                        @if($borrower)
+                                            <a href="{{ route("students.show", $borrower->id) }}">
+                                                {{ $borrower->fullname }}
+                                            </a>
+                                        @else
+                                            غير متوفر
+                                        @endif
+                                    </td>
+                                    <td>{{ $latestBorrowRequest && $latestBorrowRequest->delivered_at ? \Carbon\Carbon::parse($latestBorrowRequest->delivered_at)->format("d/m/Y H:i") : "-" }}</td>
+                                    <td>{{ $latestBorrowRequest && $latestBorrowRequest->returned_at ? \Carbon\Carbon::parse($latestBorrowRequest->returned_at)->format("d/m/Y H:i") : "-" }}</td>
                                     <td>
                                         <span class="badge bg-success">مستعار</span>
                                     </td>
                                     <td>
                                         <!-- Librarian actions for return/extension requests -->
                                         @if($book->return_request_pending)
-                                            <form action="{{ route("borrowed-books.approve-return", $book->book_id) }}" method="POST" style="display:inline;">
+                                            <form action="{{ route("borrowed-books.approve-return", $book->id) }}" method="POST" style="display:inline;">
                                                 @csrf
                                                 <button type="submit" class="btn btn-sm btn-success">قبول الإرجاع</button>
                                             </form>
-                                            <form action="{{ route("borrowed-books.reject-return", $book->book_id) }}" method="POST" style="display:inline;">
+                                            <form action="{{ route("borrowed-books.reject-return", $book->id) }}" method="POST" style="display:inline;">
                                                 @csrf
                                                 <button type="submit" class="btn btn-sm btn-danger">رفض الإرجاع</button>
                                             </form>
                                         @elseif($book->extension_request_pending)
-                                            <form action="{{ route("borrowed-books.approve-extension", $book->book_id) }}" method="POST" style="display:inline;">
+                                            <form action="{{ route("borrowed-books.approve-extension", $book->id) }}" method="POST" style="display:inline;">
                                                 @csrf
                                                 <button type="submit" class="btn btn-sm btn-success">قبول التمديد</button>
                                             </form>
-                                            <form action="{{ route("borrowed-books.reject-extension", $book->book_id) }}" method="POST" style="display:inline;">
+                                            <form action="{{ route("borrowed-books.reject-extension", $book->id) }}" method="POST" style="display:inline;">
                                                 @csrf
                                                 <button type="submit" class="btn btn-sm btn-danger">رفض التمديد</button>
                                             </form>
@@ -95,7 +113,4 @@
     </div>
 </div>
 @endsection
-
-
-
 

@@ -21,14 +21,14 @@ class ReadingRequestController extends Controller
     public function index(Request $request)
     {
         $query = BookRequest::where("type", "reading")
-                           ->where("status", "pending");
+            ->where("status", "pending");
 
         // Apply search filter if provided
         if ($request->filled("search")) {
             $search = $request->search;
-            $query->whereHas("student", function($q) use ($search) {
+            $query->whereHas("student", function ($q) use ($search) {
                 $q->where("username", "like", "%{$search}%"); // Use username for student
-            })->orWhereHas("book", function($q) use ($search) {
+            })->orWhereHas("book", function ($q) use ($search) {
                 $q->where("book_name", "like", "%{$search}%");
             });
         }
@@ -106,7 +106,7 @@ class ReadingRequestController extends Controller
             // Add notification to student
             Notification::create([
                 "student_id" => $request->student_id,
-                "message" => "تمت الموافقة على طلب قراءة الكتاب " . ($request->book->book_name ?? 'غير معروف') . ".",
+                "message" => "تم قبول طلب قراءة الكتاب " . $request->book->book_name . ". الكتاب متاح للقراءة في المكان: " . ($readingRequest->book->place ?? 'غير محدد') . "، الرف: " . ($readingRequest->book->shelf_no ?? 'غير محدد') . ".",
                 "type" => "reading_approved",
                 "is_read" => false,
                 "date_time" => now(),
@@ -156,7 +156,7 @@ class ReadingRequestController extends Controller
         // Add notification to student
         Notification::create([
             "student_id" => $request->student_id,
-            "message" => "تم رفض طلب قراءة الكتاب " . ($request->book->book_name ?? 'غير معروف') . ". يرجى التواصل مع إدارة المكتبة.",
+            "message" => "تم رفض طلب قراءة الكتاب " . $request->book->book_name . ". ملاحظة: الكتاب سيتوفر خلال اليوم.",
             "type" => "reading_rejected",
             "is_read" => false,
             "date_time" => now(),
@@ -204,5 +204,3 @@ class ReadingRequestController extends Controller
         return $this->index($request);
     }
 }
-
-

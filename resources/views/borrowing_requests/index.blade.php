@@ -21,6 +21,13 @@
     <!-- Borrowing Requests Table -->
     <div class="card">
         <div class="card-body">
+            @if(session("success"))
+                <div class="alert alert-success">{{ session("success") }}</div>
+            @endif
+            @if(session("error"))
+                <div class="alert alert-danger">{{ session("error") }}</div>
+            @endif
+
             @if($borrowingRequests->count() > 0)
                 <div class="table-responsive">
                     <table class="table table-striped table-hover">
@@ -30,8 +37,9 @@
                                 <th>رقم الطلب</th>
                                 <th>اسم الكتاب</th>
                                 <th>اسم الطالب</th>
-                                <th>الحالة</th>
-                                <th>الإجراءات</th>
+                                <th>حالة الطلب</th>
+                                <th>حالة الكتاب</th>
+                               <th>الإجراءات</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -52,10 +60,32 @@
                                             <span class="badge bg-warning">معلق</span>
                                         @elseif($request->status == "approved")
                                             <span class="badge bg-success">مقبول</span>
-                                        @else
+                                        @elseif($request->status == "rejected")
                                             <span class="badge bg-danger">مرفوض</span>
+                                        @elseif($request->status == "cancelled")
+                                            <span class="badge bg-secondary">ملغي</span>
+                                        @elseif($request->status == "completed")
+                                            <span class="badge bg-info">مكتمل</span>
+                                        @else
+                                            <span class="badge bg-secondary">{{ $request->status }}</span>
                                         @endif
                                     </td>
+                                    <td>
+                                        @if($request->book)
+                                            @if($request->book->status == "available")
+                                                <span class="badge bg-success">متاح</span>
+                                            @elseif($request->book->status == "reserved")
+                                                <span class="badge bg-warning">محجوز</span>
+                                            @elseif($request->book->status == "borrowed")
+                                                <span class="badge bg-info">مستعار</span>
+                                            @else
+                                                <span class="badge bg-secondary">{{ $request->book->status }}</span>
+                                            @endif
+                                        @else
+                                            <span class="badge bg-danger">غير متوفر</span>
+                                        @endif
+                                    </td>
+                                    <td>{{ $request->book && $request->book->reservation_date ? \Carbon\Carbon::parse($request->book->reservation_date)->format("d/m/Y H:i") : "-" }}</td>
                                     <td>
                                         @if($request->status == "pending")
                                             <form action="{{ route("borrowing-requests.approve", $request->request_id) }}" method="POST" style="display:inline;">
@@ -65,6 +95,16 @@
                                             <form action="{{ route("borrowing-requests.reject", $request->request_id) }}" method="POST" style="display:inline;">
                                                 @csrf
                                                 <button type="submit" class="btn btn-sm btn-danger">رفض</button>
+                                            </form>
+                                        @elseif($request->status == "approved" && $request->book && $request->book->status == "reserved" && !$request->delivered_at)
+                                            <form action="{{ route("borrowing-requests.deliver", $request->request_id) }}" method="POST" style="display:inline;">
+                                                @csrf
+                                                <button type="submit" class="btn btn-sm btn-primary">تسليم</button>
+                                            </form>
+                                        @elseif($request->status == "approved" && $request->book && $request->book->status == "borrowed" && $request->delivered_at && !$request->returned_at)
+                                            <form action="{{ route("borrowing-requests.return", $request->request_id) }}" method="POST" style="display:inline;">
+                                                @csrf
+                                                <button type="submit" class="btn btn-sm btn-warning">استلام</button>
                                             </form>
                                         @else
                                             لا توجد إجراءات

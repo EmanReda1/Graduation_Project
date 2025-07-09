@@ -453,11 +453,11 @@ class BookRequestController extends Controller
 
             $oldStatus = $bookRequest->status;
             $bookRequest->status = $request->status;
-            $bookRequest->librarian_notes = $request->librarian_notes;
+            $bookRequest->notes = $request->notes;
             $bookRequest->save();
 
             // إرسال إشعار للطالب حسب حالة الطلب
-            $this->sendRequestStatusNotification($bookRequest, $request->status, $request->librarian_notes);
+            $this->sendRequestStatusNotification($bookRequest, $request->status, $request->notes);
 
             return response()->json([
                 "status" => "success",
@@ -492,24 +492,44 @@ class BookRequestController extends Controller
         switch ($status) {
             case 'approved':
                 if ($bookRequest->type === 'borrowing') {
-                    $message = "تم قبول طلب استعارة الكتاب \"$bookName\". الكتاب متاح للاستعارة وسيتم توفيره خلال 3 أيام من تاريخ الموافقة.";
+                    $message = "تم قبول طلب استعارة الكتاب \"$bookName\". الكتاب متاح للاستعارة يمكن الاستلام خلال 24 ساعة من تاريخ الموافقة.";
                     $type = 'borrowing_approved';
                 } else {
-                    $message = "تم قبول طلب قراءة الكتاب \"$bookName\". الكتاب متاح للقراءة وسيتم توفيره خلال يوم واحد من تاريخ الموافقة.";
+                    $message = "تم قبول طلب قراءة الكتاب \"$bookName\". الكتاب متاح للقراءة في المكان: " . ($bookRequest->book->place ?? 'غير محدد') . "، الرف: " . ($bookRequest->book->shelf_no ?? 'غير محدد') . ".";
                     $type = 'reading_approved';
                 }
                 break;
 
-            case 'rejected':
-                $message = "تم رفض طلب $requestType الكتاب \"$bookName\".";
-                if ($librarianNotes) {
-                    $message .= " السبب: $librarianNotes";
-                }
-                $type = $bookRequest->type . '_rejected';
-                break;
+           case 'rejected':
+    $message = "تم رفض طلب $requestType الكتاب \"$bookName\".";
+    if ($librarianNotes) {
+        $message .= " السبب: $librarianNotes";
+    } else {
+        // Default rejection notes based on request type
+        if ($bookRequest->type === 'reading') {
+            $message .= " ملاحظة: الكتاب سيتوفر خلال اليوم.";
+        } elseif ($bookRequest->type === 'borrowing') {
+            // البحث عن طلب الاستعارة المقبول للكتاب
+            $activeBorrowingRequest = BookRequest::where('book_id', $bookRequest->book_id)
+                ->where('type', 'borrowing')
+                ->where('status', 'approved')
+                ->orderBy('updated_at', 'desc')
+                ->first();
+
+            if ($activeBorrowingRequest) {
+                $expectedAvailableDate = $activeBorrowingRequest->updated_at->addDays(3)->format('d/m/Y');
+                $message .= " ملاحظة: الكتاب سيتوفر في تاريخ $expectedAvailableDate.";
+            } else {
+                $message .= " ملاحظة: الكتاب سيتوفر خلال 3 أيام.";
+            }
+        }
+    }
+    $type = $bookRequest->type . '_rejected';
+    break;
+
 
             default:
-                return; // لا نرسل إشعار للحالات الأخرى
+                return;
         }
 
         $this->sendNotificationToStudent($bookRequest->student_id, [
@@ -836,8 +856,7 @@ class BookRequestController extends Controller
             $bookRequest->load("book");
 
             // إرسال إشعار للطالب بتأكيد إلغاء الطلب
-            $requestType = $bookRequest->type === 'reading' ? 'قراءة' :
-                          ($bookRequest->type === 'borrowing' ? 'استعارة' : 'تمديد');
+            $requestType = $bookRequest->type === 'reading' ? 'قراءة' : ($bookRequest->type === 'borrowing' ? 'استعارة' : 'تمديد');
 
             $this->sendNotificationToStudent($student->student_id, [
                 'type' => 'request_cancelled',

@@ -7,6 +7,7 @@ use App\Models\RetrieveRequest;
 use App\Models\Student;
 use App\Models\Book;
 use App\Models\Notification;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Http\Request as HttpRequest;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -36,23 +37,24 @@ class BorrowingRequestController extends Controller
         if ($request->filled("status")) {
             $query->where("status", $request->status);
         } else {
-            // Default to pending requests if no status filter is applied
-            $query->where("status", "pending");
+            // Default filter: show pending, approved (reserved), and delivered requests
+            // Exclude rejected and cancelled requests by default
+            $query->whereIn("status", ["pending", "approved", "delivered"]);
         }
 
         if ($request->filled("start_date") && $request->filled("end_date")) {
             $query->whereDate("date_of_request", ">=", $request->start_date)
-                  ->whereDate("date_of_request", "<=", $request->end_date);
+                ->whereDate("date_of_request", "<=", $request->end_date);
         }
 
         if ($request->filled("search")) {
             $search = $request->search;
-            $query->where(function($q) use ($search) {
-                $q->whereHas("student", function($sq) use ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->whereHas("student", function ($sq) use ($search) {
                     $sq->where("username", "like", "%{$search}%");
-                })->orWhereHas("book", function($sq) use ($search) {
+                })->orWhereHas("book", function ($sq) use ($search) {
                     $sq->where("book_name", "like", "%{$search}%")
-                      ->orWhere("author", "like", "%{$search}%");
+                        ->orWhere("author", "like", "%{$search}%");
                 });
             });
         }
@@ -71,7 +73,7 @@ class BorrowingRequestController extends Controller
         $books = Book::orderBy("book_name")->get();
 
         // Get statuses for filter dropdown
-        $statuses = ["pending", "approved", "rejected"];
+        $statuses = ["pending", "approved", "rejected", "cancelled", "delivered"];
 
         return view("borrowing_requests.index", compact("borrowingRequests", "students", "books", "statuses"));
     }
@@ -154,7 +156,7 @@ class BorrowingRequestController extends Controller
 
         $students = Student::orderBy("username")->get();
         $books = Book::orderBy("book_name")->get();
-        $statuses = ["pending", "approved", "rejected"];
+        $statuses = ["pending", "approved", "rejected", "cancelled", "delivered"];
 
         return view("borrowing_requests.edit", compact("borrowingRequest", "students", "books", "statuses"));
     }
@@ -173,7 +175,7 @@ class BorrowingRequestController extends Controller
         $validated = $request->validate([
             "student_id" => "required|exists:students,student_id",
             "book_id" => "required|exists:books,book_id",
-            "status" => "required|in:pending,approved,rejected",
+            "status" => "required|in:pending,approved,rejected,cancelled,delivered",
             "notes" => "nullable|string|max:500",
         ]);
 
@@ -197,33 +199,27 @@ class BorrowingRequestController extends Controller
             "notes" => $validated["notes"] ?? null,
         ]);
 
-        // If approved, create a retrieve request if it doesn\\\"t exist and update book status
+        // If approved, update book status to reserved and set reservation_date
         if ($validated["status"] == "approved") {
-            if (!$borrowingRequest->retrieveRequest) {
-                $borrowingRequest->retrieveRequest()->create([
-                    "request_id" => $borrowingRequest->request_id,
-                    "request_date" => now(),
-                    "status" => "approved",
-                ]);
-            }
-
-            // Update book status to borrowed
-            $borrowingRequest->book->update(["status" => "borrowed"]);
+            // Update book status to reserved and set reservation_date
+            $borrowingRequest->book->update([
+                "status" => "reserved",
+                "reservation_date" => now(),
+            ]);
 
             // Add notification to student
             Notification::create([
                 "student_id" => $borrowingRequest->student_id,
-                "message" => "تمت الموافقة على طلب استعارة الكتاب " . $borrowingRequest->book->book_name . ".",
+                "message" => "تمت الموافقة على طلب استعارة الكتاب " . $borrowingRequest->book->book_name . ". الكتاب محجوز لك لمدة 24 ساعة. يرجى الاستلام خلال هذه الفترة.",
                 "type" => "borrowing_approved",
                 "is_read" => false,
                 "date_time" => now(),
             ]);
-
         }
 
-        // If rejected and book was marked as borrowed for this request, make it available again
+        // If rejected and book was marked as reserved for this request, make it available again
         if ($validated["status"] == "rejected") {
-            // Check if this was the request that caused the book to be borrowed
+            // Check if this was the request that caused the book to be reserved
             $activeRequests = Request::where("book_id", $borrowingRequest->book_id)
                 ->where("type", "borrowing")
                 ->where("status", "approved")
@@ -278,13 +274,16 @@ class BorrowingRequestController extends Controller
             // Update the status to approved
             $borrowingRequest->update(["status" => "approved"]);
 
-            // Update book status to borrowed
-            $book->update(["status" => "borrowed"]);
+            // Update book status to reserved and set reservation_date
+            $book->update([
+                "status" => "reserved",
+                "reservation_date" => now(),
+            ]);
 
             // Add notification to student
             Notification::create([
                 "student_id" => $borrowingRequest->student_id,
-                "message" => "تمت الموافقة على طلب استعارة الكتاب " . $book->book_name . ".",
+                "message" => "تمت الموافقة على طلب استعارة الكتاب " . $book->book_name . ". الكتاب محجوز لك لمدة 24 ساعة. يرجى الاستلام خلال هذه الفترة.",
                 "type" => "borrowing_approved",
                 "is_read" => false,
                 "date_time" => now(),
@@ -292,7 +291,7 @@ class BorrowingRequestController extends Controller
 
             DB::commit();
 
-            return redirect()->route("borrowing-requests.show", $borrowingRequest->request_id)
+            return redirect()->route("borrowing-requests.index")
                 ->with("success", "تمت الموافقة على طلب الاستعارة بنجاح.");
         } catch (\Exception $e) {
             DB::rollBack();
@@ -316,20 +315,16 @@ class BorrowingRequestController extends Controller
             // Update the status to rejected
             $borrowingRequest->update(["status" => "rejected"]);
 
-            // If rejected and book was marked as borrowed for this request, make it available again
-            // We need to check if there are any other active borrowing requests for this book
+            // If rejected and book was marked as reserved for this request, make it available again
             $activeBorrowingRequests = Request::where("book_id", $borrowingRequest->book_id)
                 ->where("type", "borrowing")
                 ->where("status", "approved")
                 ->where("request_id", "!=", $borrowingRequest->request_id)
                 ->count();
 
-            // If no other active borrowing requests, and the book was previously borrowed due to this request,
-            // then set the book status back to available.
-            // We need to fetch the book with a lock to prevent race conditions
             $book = Book::where("book_id", $borrowingRequest->book_id)->lockForUpdate()->first();
 
-            if ($book && $activeBorrowingRequests == 0 && $book->status == "borrowed") {
+            if ($book && $activeBorrowingRequests == 0 && $book->status == "reserved") {
                 $book->update(["status" => "available"]);
             }
 
@@ -344,11 +339,129 @@ class BorrowingRequestController extends Controller
 
             DB::commit();
 
-            return redirect()->route("borrowing-requests.show", $borrowingRequest->request_id)
+            return redirect()->route("borrowing-requests.index")
                 ->with("success", "تم رفض طلب الاستعارة بنجاح.");
         } catch (\Exception $e) {
             DB::rollBack();
             return redirect()->back()->with("error", "حدث خطأ أثناء رفض طلب الاستعارة: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Deliver a reserved book to the student.
+     * This function changes the book status from \'reserved\' to \'borrowed\'.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function deliver($id)
+    {
+        DB::beginTransaction();
+
+        try {
+            $borrowingRequest = Request::where("type", "borrowing")
+                ->where("status", "approved")
+                ->findOrFail($id);
+
+            // Load the book with a lock to prevent race conditions
+            $book = Book::where("book_id", $borrowingRequest->book_id)->lockForUpdate()->first();
+
+            if (!$book) {
+                DB::rollBack();
+                return redirect()->back()->with("error", "الكتاب غير موجود.");
+            }
+
+            // Check if the book is reserved
+            if ($book->status !== "reserved") {
+                DB::rollBack();
+                return redirect()->back()->with("error", "الكتاب غير محجوز أو تم تسليمه بالفعل.");
+            }
+
+            // Update book status to borrowed and set delivered_at
+            $book->update([
+                "status" => "borrowed",
+                "borrowed_date" => now(),
+                "reservation_date" => null, // Clear reservation date
+            ]);
+
+            // Update the borrowing request with delivery information
+            $borrowingRequest->update([
+                "delivered_at" => now(),
+                "delivered_by" => Auth::id(), // Assuming the librarian is authenticated
+            ]);
+
+            // Add notification to student
+            Notification::create([
+                "student_id" => $borrowingRequest->student_id,
+                "message" => "تم تسليم الكتاب " . $borrowingRequest->book->book_name . " بنجاح. يرجى إرجاعه في الموعد المحدد.",
+                "type" => "book_delivered",
+                "is_read" => false,
+                "date_time" => now(),
+            ]);
+
+            DB::commit();
+
+            return redirect()->route("borrowing-requests.index")
+                ->with("success", "تم تسليم الكتاب للطالب بنجاح.");
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()->with("error", "حدث خطأ أثناء تسليم الكتاب: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Cancel expired reservations automatically.
+     * This function should be called by a scheduled job.
+     *
+     * @return void
+     */
+    public static function cancelExpiredReservations()
+    {
+        DB::beginTransaction();
+
+        try {
+            // Find all approved borrowing requests with reserved books that are older than 24 hours
+            $expiredReservations = Request::where("type", "borrowing")
+                ->where("status", "approved")
+                ->whereHas("book", function ($query) {
+                    $query->where("status", "reserved")
+                          ->where("reservation_date", "<=", now()->subDay());
+                })
+                ->whereNull("delivered_at") // Not yet delivered
+                ->with(["book", "student"])
+                ->get();
+
+            foreach ($expiredReservations as $reservation) {
+                // Update book status back to available
+                $reservation->book->update([
+                    "status" => "available",
+                    "reservation_date" => null,
+                ]);
+
+                // Update the request status to cancelled
+                $reservation->update([
+                    "status" => "cancelled",
+                    "cancelled_at" => now(),
+                    "cancellation_reason" => "انتهت فترة الحجز - لم يتم الاستلام خلال 24 ساعة",
+                ]);
+
+                // Notify the student about cancellation
+                Notification::create([
+                    "student_id" => $reservation->student_id,
+                    "message" => "تم إلغاء طلب استعارة الكتاب " . $reservation->book->book_name . " لعدم الاستلام خلال 24 ساعة من الموافقة.",
+                    "type" => "reservation_cancelled",
+                    "is_read" => false,
+                    "date_time" => now(),
+                ]);
+            }
+
+            DB::commit();
+
+            // Log the number of cancelled reservations
+            Log::info("Cancelled " . $expiredReservations->count() . " expired reservations.");
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error("Error cancelling expired reservations: " . $e->getMessage());
         }
     }
 
@@ -362,9 +475,10 @@ class BorrowingRequestController extends Controller
     {
         $borrowingRequest = Request::where("type", "borrowing")->findOrFail($id);
 
-        // If the request was approved and the book is borrowed, check if we need to update book status
-        if ($borrowingRequest->status == "approved" && $borrowingRequest->book->status == "borrowed") {
-            // Check if this was the request that caused the book to be borrowed
+        // If the request was approved and the book is reserved/borrowed, check if we need to update book status
+        if ($borrowingRequest->status == "approved" &&
+            in_array($borrowingRequest->book->status, ["reserved", "borrowed"])) {
+            // Check if this was the request that caused the book to be reserved/borrowed
             $activeRequests = Request::where("book_id", $borrowingRequest->book_id)
                 ->where("type", "borrowing")
                 ->where("status", "approved")
@@ -376,7 +490,7 @@ class BorrowingRequestController extends Controller
             }
         }
 
-        // Delete the borrowing request (will cascade delete the retrieve request if exists)
+        // Delete the borrowing request
         $borrowingRequest->delete();
 
         return redirect()->route("borrowing-requests.index")
@@ -396,12 +510,12 @@ class BorrowingRequestController extends Controller
         $query = Request::with(["student", "book"])
             ->where("type", "borrowing");
 
-        $query->where(function($q) use ($search) {
-            $q->whereHas("student", function($sq) use ($search) {
+        $query->where(function ($q) use ($search) {
+            $q->whereHas("student", function ($sq) use ($search) {
                 $sq->where("username", "like", "%{$search}%");
-            })->orWhereHas("book", function($sq) use ($search) {
+            })->orWhereHas("book", function ($sq) use ($search) {
                 $sq->where("book_name", "like", "%{$search}%")
-                      ->orWhere("author", "like", "%{$search}%");
+                    ->orWhere("author", "like", "%{$search}%");
             });
         });
 
@@ -414,7 +528,7 @@ class BorrowingRequestController extends Controller
         $books = Book::orderBy("book_name")->get();
 
         // Get statuses for filter dropdown
-        $statuses = ["pending", "approved", "rejected"];
+        $statuses = ["pending", "approved", "rejected", "cancelled", "delivered"];
 
         return view("borrowing_requests.index", compact("borrowingRequests", "students", "books", "statuses", "search"));
     }
@@ -442,7 +556,7 @@ class BorrowingRequestController extends Controller
         $books = Book::orderBy("book_name")->get();
 
         // Get statuses for filter dropdown
-        $statuses = ["pending", "approved", "rejected"];
+        $statuses = ["pending", "approved", "rejected", "cancelled", "delivered"];
 
         return view("borrowing_requests.index", compact("borrowingRequests", "students", "books", "statuses", "student"));
     }
@@ -470,7 +584,7 @@ class BorrowingRequestController extends Controller
         $books = Book::orderBy("book_name")->get();
 
         // Get statuses for filter dropdown
-        $statuses = ["pending", "approved", "rejected"];
+        $statuses = ["pending", "approved", "rejected", "cancelled", "delivered"];
 
         return view("borrowing_requests.index", compact("borrowingRequests", "students", "books", "statuses", "book"));
     }
@@ -481,7 +595,6 @@ class BorrowingRequestController extends Controller
      * @param  string  $status
      * @return \Illuminate\Http\Response
      */
-
     public function getByStatus($status)
     {
         $borrowingRequests = Request::with(["student", "book"])
@@ -492,10 +605,8 @@ class BorrowingRequestController extends Controller
 
         $students = Student::orderBy("username")->get();
         $books = Book::orderBy("book_name")->get();
-        $statuses = ["pending", "approved", "rejected"];
+        $statuses = ["pending", "approved", "rejected", "cancelled", "delivered"];
 
         return view("borrowing_requests.index", compact("borrowingRequests", "students", "books", "statuses", "status"));
     }
 }
-
-
