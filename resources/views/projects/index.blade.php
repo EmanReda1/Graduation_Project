@@ -1,93 +1,31 @@
 @extends('layouts.app')
-
+@push('styles')
+    <link href="{{ asset('css/visits.css') }}" rel="stylesheet">
+@endpush
 @section('content')
-    <div class="container-fluid">
-        <div class="row">
-            <div class="col-md-12">
-                <div class="card">
-                    <div class="card-header">
-                        <h4 class="card-title">المشاريع</h4>
-                        <div class="card-tools">
-                            <a href="{{ route('projects.create') }}" class="btn btn-primary">
-                                <i class="fas fa-plus"></i> إضافة مشروع جديد
-                            </a>
-                        </div>
-                    </div>
-                    <div class="card-body">
-                        <!-- Search and Filter Form -->
-                        <div class="row mb-4">
-                            <div class="col-md-12">
-                                <div class="card card-outline card-info">
-                                    <div class="card-header">
-                                        <h3 class="card-title">بحث وتصفية</h3>
-                                        <div class="card-tools">
-                                            <button type="button" class="btn btn-tool" data-card-widget="collapse">
-                                                <i class="fas fa-minus"></i>
-                                            </button>
-                                        </div>
-                                    </div>
-                                    <div class="card-body">
-                                        <form action="{{ route('projects.index') }}" method="GET">
-                                            <div class="row">
-                                                <div class="col-md-4">
-                                                    <div class="form-group">
-                                                        <label for="search">بحث</label>
-                                                        <input type="text" name="search" id="search"
-                                                            class="form-control" placeholder="اسم المشروع، القسم، المكان..."
-                                                            value="{{ request('search') }}">
-                                                    </div>
-                                                </div>
-                                                <div class="col-md-4">
-                                                    <div class="form-group">
-                                                        <label for="department">القسم</label>
-                                                        <select name="department" id="department"
-                                                            class="form-control select2">
-                                                            <option value="">الكل</option>
-                                                            @foreach ($departments as $dept)
-                                                                <option value="{{ $dept }}"
-                                                                    {{ request('department') == $dept ? 'selected' : '' }}>
-                                                                    {{ $dept }}
-                                                                </option>
-                                                            @endforeach
-                                                        </select>
-                                                    </div>
-                                                </div>
-                                                <div class="col-md-4">
-                                                    <div class="form-group">
-                                                        <label for="status">الحالة</label>
-                                                        <select name="status" id="status" class="form-control">
-                                                            <option value="">الكل</option>
-                                                            @foreach ($statuses as $status)
-                                                                <option value="{{ $status }}"
-                                                                    {{ request('status') == $status ? 'selected' : '' }}>
-                                                                    @if ($status == 'available')
-                                                                        متاح
-                                                                    @elseif($status == 'borrowed')
-                                                                        مستعار
-                                                                    @elseif($status == 'archived')
-                                                                        مؤرشف
-                                                                    @endif
-                                                                </option>
-                                                            @endforeach
-                                                        </select>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="row">
-                                                <div class="col-md-12 text-center">
-                                                    <button type="submit" class="btn btn-primary">
-                                                        <i class="fas fa-search"></i> بحث
-                                                    </button>
-                                                    <a href="{{ route('projects.index') }}" class="btn btn-secondary">
-                                                        <i class="fas fa-redo"></i> إعادة تعيين
-                                                    </a>
-                                                </div>
-                                            </div>
-                                        </form>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+    <div class="container">
+        <div class="search-section-custom">
+            <h1>المشاريع </h1>
+
+                <a href="{{ route('projects.create') }}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> إضافة مشروع جديد
+                </a>
+
+            <!-- Search -->
+            <div class="mb-4">
+                <form action="{{ route('projects.index') }}" method="GET">
+
+
+                                <label for="search">بحث</label>
+                                <input type="text" name="search" id="search" class="form-control"
+                                    placeholder="اسم المشروع ..." value="{{ request('search') }}">
+
+
+                </form>
+            </div>
+        </div>
+
+
 
                         <!-- Projects Table -->
                         <div class="table-responsive">

@@ -1,5 +1,8 @@
 <!-- resources/views/books/show.blade.php -->
 @extends('layouts.app')
+@push('styles')
+    <link href="{{ asset('css/visits.css') }}" rel="stylesheet">
+@endpush
 
 @section('content')
 <div class="container">

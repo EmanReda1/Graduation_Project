@@ -1,12 +1,12 @@
 @extends("layouts.app")
-
+@push('styles')
+    <link href="{{ asset('css/visits.css') }}" rel="stylesheet">
+@endpush
 @section("content")
 <div class="container">
-    <div class="row mb-4">
-        <div class="col-md-8">
+
+    <div class="search-section-custom">
             <h1>الكتب المستعارة</h1>
-        </div>
-    </div>
 
     <!-- Search and Filter -->
     <div class="mb-4">
@@ -22,6 +22,7 @@
                 <i class="fas fa-search"></i>
             </button>
         </form>
+    </div>
     </div>
 
     <!-- Borrowed Books Table -->

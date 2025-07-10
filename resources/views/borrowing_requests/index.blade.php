@@ -1,12 +1,14 @@
 @extends("layouts.app")
 
+@push('styles')
+    <link href="{{ asset('css/visits.css') }}" rel="stylesheet">
+@endpush
+
 @section("content")
 <div class="container">
-    <div class="row mb-4">
-        <div class="col-md-8">
+
+    <div class="search-section-custom">
             <h1>طلبـات الاستعـارة</h1>
-        </div>
-    </div>
 
     <!-- Search -->
     <div class="mb-4">
@@ -17,6 +19,7 @@
             </button>
         </form>
     </div>
+</div>
 
     <!-- Borrowing Requests Table -->
     <div class="card">

@@ -10,7 +10,7 @@
         <div class="search-section-custom">
             <h1>كــل الكتــب</h1>
 
-            <!-- Search and Filter Section - محسن ليشبه الصورة -->
+            <!-- Search and Filter Section -->
             <div class="row g-2 mb-3">
                 <!-- البحث -->
                 <div class="col-md-6">

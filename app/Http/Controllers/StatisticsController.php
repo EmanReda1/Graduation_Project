@@ -125,6 +125,8 @@ class StatisticsController extends Controller
                 'books.summary',
                 'books.department',
                 'books.status',
+                'reservation_date',
+                'borrowed_date',
                 'books.place',
                 'books.shelf_no',
                 'books.size',
@@ -152,6 +154,8 @@ class StatisticsController extends Controller
                 'books.price',
                 'books.source',
                 'books.summary',
+                'reservation_date',
+                'borrowed_date',
                 'books.department',
                 'books.status',
                 'books.place',
@@ -195,6 +199,7 @@ class StatisticsController extends Controller
             'booksStatusData',
             'studentsByLevel',
             'mostReadBooks',
+
             'mostBorrowedBooks'
         ));
     }
@@ -204,75 +209,37 @@ class StatisticsController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function books()
+   public function books()
     {
         // Books by status
-        $booksByStatus = Book::select('status', DB::raw('count(*) as total'))
-            ->groupBy('status')
-            ->pluck('total', 'status');
+        $booksByStatus = Book::select("status", DB::raw("count(*) as total"))
+            ->groupBy("status")
+            ->pluck("total", "status");
 
         // Books by department
-        $booksByDepartment = Book::select('department', DB::raw('count(*) as total'))
-            ->whereNotNull('department')
-            ->groupBy('department')
-            ->orderBy('total', 'desc')
+        $booksByDepartment = Book::select("department", DB::raw("count(*) as total"))
+            ->whereNotNull("department")
+            ->groupBy("department")
+            ->orderBy("total", "desc")
             ->get();
 
         // Most borrowed books - استخدام JOIN مباشر
-        $mostBorrowedBooks = DB::table('books')
-            ->join('requests', 'books.book_id', '=', 'requests.book_id')
-            ->where('requests.type', 'borrowing')
-            ->select('books.*', DB::raw('count(requests.request_id) as borrow_count'))
-            ->groupBy(
-                'books.book_id',
-                'books.book_name',
-                'books.author',
-                'books.isbn_no',
-                'books.book_no',
-                'books.price',
-                'books.source',
-                'books.summary',
-                'books.department',
-                'books.status',
-                'books.place',
-                'books.shelf_no',
-                'books.size',
-                'books.release_date',
-                'books.library_date',
-                'books.image',
-                'books.created_at',
-                'books.updated_at'
-            )
-            ->orderBy('borrow_count', 'desc')
+        $mostBorrowedBooks = DB::table("books")
+            ->join("requests", "books.book_id", "=", "requests.book_id")
+            ->where("requests.type", "borrowing")
+            ->select("books.book_id", "books.book_name", "books.author", DB::raw("count(requests.request_id) as borrow_count"))
+            ->groupBy("books.book_id", "books.book_name", "books.author")
+            ->orderBy("borrow_count", "desc")
             ->limit(15)
             ->get();
 
         // Most read books - استخدام JOIN مباشر
-        $mostReadBooks = DB::table('books')
-            ->join('requests', 'books.book_id', '=', 'requests.book_id')
-            ->where('requests.type', 'reading')
-            ->select('books.*', DB::raw('count(requests.request_id) as read_count'))
-            ->groupBy(
-                'books.book_id',
-                'books.book_name',
-                'books.author',
-                'books.isbn_no',
-                'books.book_no',
-                'books.price',
-                'books.source',
-                'books.summary',
-                'books.department',
-                'books.status',
-                'books.place',
-                'books.shelf_no',
-                'books.size',
-                'books.release_date',
-                'books.library_date',
-                'books.image',
-                'books.created_at',
-                'books.updated_at'
-            )
-            ->orderBy('read_count', 'desc')
+        $mostReadBooks = DB::table("books")
+            ->join("requests", "books.book_id", "=", "requests.book_id")
+            ->where("requests.type", "reading")
+            ->select("books.book_id", "books.book_name", "books.author", DB::raw("count(requests.request_id) as read_count"))
+            ->groupBy("books.book_id", "books.book_name", "books.author")
+            ->orderBy("read_count", "desc")
             ->limit(15)
             ->get();
 
@@ -283,27 +250,27 @@ class StatisticsController extends Controller
 
         for ($i = 11; $i >= 0; $i--) {
             $month = Carbon::now()->subMonths($i);
-            $months[] = $month->format('M Y');
+            $months[] = $month->format("M Y");
 
-            $readingData[] = BookRequest::where('type', 'reading')
-                ->whereMonth('date_of_request', $month->month)
-                ->whereYear('date_of_request', $month->year)
+            $readingData[] = BookRequest::where("type", "reading")
+                ->whereMonth("date_of_request", $month->month)
+                ->whereYear("date_of_request", $month->year)
                 ->count();
 
-            $borrowingData[] = BookRequest::where('type', 'borrowing')
-                ->whereMonth('date_of_request', $month->month)
-                ->whereYear('date_of_request', $month->year)
+            $borrowingData[] = BookRequest::where("type", "borrowing")
+                ->whereMonth("date_of_request", $month->month)
+                ->whereYear("date_of_request", $month->year)
                 ->count();
         }
 
-        return view('statistics.books', compact(
-            'booksByStatus',
-            'booksByDepartment',
-            'mostBorrowedBooks',
-            'mostReadBooks',
-            'months',
-            'readingData',
-            'borrowingData'
+        return view("statistics.books", compact(
+            "booksByStatus",
+            "booksByDepartment",
+            "mostBorrowedBooks",
+            "mostReadBooks",
+            "months",
+            "readingData",
+            "borrowingData"
         ));
     }
 
@@ -332,6 +299,8 @@ class StatisticsController extends Controller
                 'students.password',
                 'students.phone_no',
                 'students.level',
+                'students.image',
+                'students.university_code',
                 'students.department',
                 'students.borrow_docs',
                 'students.created_at',
@@ -353,6 +322,8 @@ class StatisticsController extends Controller
                 'students.password',
                 'students.phone_no',
                 'students.level',
+                 'students.university_code',
+                 'students.image',
                 'students.department',
                 'students.borrow_docs',
                 'students.created_at',

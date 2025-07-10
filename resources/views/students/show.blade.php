@@ -1,6 +1,10 @@
 <!-- resources/views/students/show.blade.php - Basic Student Data Only -->
 @extends('layouts.app')
 
+@push('styles')
+    <link href="{{ asset('css/visits.css') }}" rel="stylesheet">
+@endpush
+
 @section('content')
 <div class="container">
     <!-- Header -->

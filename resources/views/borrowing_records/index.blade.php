@@ -1,12 +1,14 @@
 @extends("layouts.app")
 
+@push('styles')
+    <link href="{{ asset('css/visits.css') }}" rel="stylesheet">
+@endpush
+
 @section("content")
 <div class="container">
-    <div class="row mb-4">
-        <div class="col-md-8">
+    <div class="search-section-custom">
             <h1>سجـل الاستعـارة</h1>
-        </div>
-    </div>
+
 
     <!-- Search and Filter -->
     <div class="mb-4">
@@ -22,6 +24,7 @@
                 <i class="fas fa-search"></i>
             </button>
         </form>
+    </div>
     </div>
 
     <!-- Borrowing Records Table -->
@@ -86,8 +89,10 @@
 
                 <!-- Pagination -->
                 <div class="d-flex justify-content-center mt-4">
-                    {{ $borrowingRecords->appends(request()->query())->links() }}
-                </div>
+                    <div class="pagination-sm">
+                        {{ $borrowingRecords->appends(request()->query())->links('custom-pagination') }}
+                    </div>
+
             @else
                 <div class="alert alert-info text-center">
                     لا توجد سجلات استعارة حالياً.

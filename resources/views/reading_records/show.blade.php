@@ -1,15 +1,18 @@
 @extends("layouts.app")
-
+@push('styles')
+    <link href="{{ asset('css/visits.css') }}" rel="stylesheet">
+@endpush
 @section("content")
 <div class="container">
-    <div class="row mb-4">
-        <div class="col-md-8">
+
+    <div class="search-section-custom">
             <h1>تفاصيل سجل القراءة</h1>
-        </div>
+
         <div class="col-md-4 text-end">
             <a href="{{ route("reading-records.index") }}" class="btn btn-secondary">العودة إلى سجل القراءة</a>
         </div>
     </div>
+
 
     <div class="card mb-4">
         <div class="card-header bg-primary text-white">
