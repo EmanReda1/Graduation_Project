@@ -101,11 +101,7 @@
                                                 @csrf
                                                 <button type="submit" class="btn btn-sm btn-primary">تسليم</button>
                                             </form>
-                                        @elseif($request->status == "approved" && $request->book && $request->book->status == "borrowed" && $request->delivered_at && !$request->returned_at)
-                                            <form action="{{ route("borrowing-requests.return", $request->request_id) }}" method="POST" style="display:inline;">
-                                                @csrf
-                                                <button type="submit" class="btn btn-sm btn-warning">استلام</button>
-                                            </form>
+
                                         @else
                                             لا توجد إجراءات
                                         @endif

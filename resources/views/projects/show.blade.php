@@ -20,7 +20,7 @@
                         <div class="row">
                             <div class="col-md-3 text-center">
                                 @if ($project->image)
-                                    <img src="{{ Storage::url($project->image) }}" alt="{{ $project->project_name }}"
+                                    <img src="{{ $project->image  }}" alt="{{ $project->project_name }}"
                                         class="img-fluid img-thumbnail" style="max-height: 300px;">
                                 @else
                                     <img src="{{ asset('images/project-placeholder.png') }}" alt="صورة افتراضية"
