@@ -15,10 +15,14 @@
         <form action="{{ route("borrowing-records.index") }}" method="GET" class="d-flex">
             <input type="text" class="form-control" id="search" name="search" placeholder="بحث..." value="{{ request("search") }}">
             <select class="form-select ms-2" id="status" name="status">
-                <option value="">جميع الحالات</option>
-                @foreach($statuses as $statusOption)
-                    <option value="{{ $statusOption }}" {{ request("status") == $statusOption ? "selected" : "" }}>{{ $statusOption }}</option>
-                @endforeach
+                <option value="">كل الحالات</option>
+                            <option value="approved" {{ request('status') == 'approved' ? 'selected' : '' }}>مقبول
+                            </option>
+                            <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>معلق
+                            </option>
+                            <option value="reserved" {{ request('status') == 'reserved' ? 'selected' : '' }}>محجوز</option>
+                            <option value="rejected" {{ request('status') == 'rejected' ? 'selected' : '' }}>مرفوض
+                            </option>
             </select>
             <button type="submit" class="btn btn-primary ms-2">
                 <i class="fas fa-search"></i>

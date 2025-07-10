@@ -6,11 +6,11 @@
 
 @section('content')
     <div class="container">
-        <!-- عنوان الصفحة مع السيرش - تحسين التصميم -->
+
         <div class="search-section-custom">
             <h1>كــل الكتــب</h1>
 
-            <!-- Search and Filter Section -->
+
             <div class="row g-2 mb-3">
                 <!-- البحث -->
                 <div class="col-md-6">
@@ -18,8 +18,6 @@
                         <div class="input-group">
                             <input type="text" name="search" class="form-control" placeholder="بحث عن كتاب..."
                                 value="{{ request('search') }}">
-                            <input type="hidden" name="department" value="{{ request('department') }}">
-                            <input type="hidden" name="status" value="{{ request('status') }}">
                             <button type="submit" class="btn btn-primary-custom">
                                 <i class="fas fa-search"></i> بحث
                             </button>
@@ -34,10 +32,19 @@
                         <input type="hidden" name="status" value="{{ request('status') }}">
                         <select name="department" class="form-control" onchange="this.form.submit()">
                             <option value="">كل الأقسام</option>
-                            @foreach ($departments as $dept)
-                                <option value="{{ $dept }}" {{ request('department') == $dept ? 'selected' : '' }}>
-                                    {{ $dept }}</option>
-                            @endforeach
+                            <option value="cs" {{ request('department') == 'cs' ? 'selected' : '' }}>علوم الحاسب
+                            </option>
+                            <option value="ds" {{ request('department') == 'ds' ? 'selected' : '' }}>دعم القرار
+                            </option>
+                            <option value="it" {{ request('department') == 'it' ? 'selected' : '' }}>تكنولوجيا المعلومات
+                            </option>
+                            <option value="is" {{ request('department') == 'is' ? 'selected' : '' }}>نظم المعلومات
+                            </option>
+                            <option value="ai" {{ request('department') == 'ai' ? 'selected' : '' }}>الذكاء الاصطناعي
+                            </option>
+                            <option value="general" {{ request('department') == 'ce' ? 'selected' : '' }}>كتب عامة
+                            </option>
+
                         </select>
                     </form>
                 </div>
@@ -49,10 +56,13 @@
                         <input type="hidden" name="department" value="{{ request('department') }}">
                         <select name="status" class="form-control" onchange="this.form.submit()">
                             <option value="">كل الحالات</option>
-                            @foreach ($statuses as $stat)
-                                <option value="{{ $stat }}" {{ request('status') == $stat ? 'selected' : '' }}>
-                                    {{ $stat }}</option>
-                            @endforeach
+                            <option value="available" {{ request('status') == 'available' ? 'selected' : '' }}>متاح
+                            </option>
+                            <option value="borrowed" {{ request('status') == 'borrowed' ? 'selected' : '' }}>مستعار
+                            </option>
+                            <option value="reserved" {{ request('status') == 'reserved' ? 'selected' : '' }}>محجوز</option>
+                            <option value="in_reading" {{ request('status') == 'in_reading' ? 'selected' : '' }}>قراءة
+                            </option>
                         </select>
                     </form>
                 </div>
@@ -212,7 +222,6 @@
 
 @push('scripts')
     <script>
-
         document.addEventListener('DOMContentLoaded', function() {
             // تحسين السيرش - البحث أثناء الكتابة
             const searchInput = document.querySelector('input[name="search"]');
@@ -255,6 +264,5 @@
                 });
             });
         });
-
     </script>
 @endpush

@@ -13,10 +13,20 @@
         <form action="{{ route("borrowed-books.index") }}" method="GET" class="d-flex">
             <input type="text" class="form-control" id="search" name="search" placeholder="بحث عن كتاب..." value="{{ request("search") }}">
             <select class="form-select ms-2" id="department" name="department">
-                <option value="">جميع الأقسام</option>
-                @foreach($departments as $department)
-                    <option value="{{ $department }}" {{ request("department") == $department ? "selected" : "" }}>{{ $department }}</option>
-                @endforeach
+
+                <option value="">كل الأقسام</option>
+                            <option value="cs" {{ request('department') == 'cs' ? 'selected' : '' }}>علوم الحاسب
+                            </option>
+                            <option value="ds" {{ request('department') == 'ds' ? 'selected' : '' }}>دعم القرار
+                            </option>
+                            <option value="it" {{ request('department') == 'it' ? 'selected' : '' }}>تكنولوجيا المعلومات
+                            </option>
+                            <option value="is" {{ request('department') == 'is' ? 'selected' : '' }}>نظم المعلومات
+                            </option>
+                            <option value="ai" {{ request('department') == 'ai' ? 'selected' : '' }}>الذكاء الاصطناعي
+                            </option>
+                            <option value="general" {{ request('department') == 'ce' ? 'selected' : '' }}>كتب عامة
+                            </option>
             </select>
             <button type="submit" class="btn btn-primary ms-2">
                 <i class="fas fa-search"></i>
