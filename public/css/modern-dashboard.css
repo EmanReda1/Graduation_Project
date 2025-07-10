@@ -1,29 +1,28 @@
 
-
-/* متغيرات الألوان */
+/* متغيرات الألوان المحسنة */
 :root {
-    --primary-color: #667eea;
-    --primary-gradient: linear-gradient(135deg, #98b6fb 0%, #4b7ba2 100%);
-    --secondary-color: #7baede;
-    --secondary-gradient: linear-gradient(135deg, #93bdfb 0%, #57c6f5 100%);
-    --success-color: #4facfe;
-    --success-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-    --warning-color: #43e97b;
-    --warning-gradient: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
-    --danger-color: #f0d9e0;
-    --danger-gradient: linear-gradient(135deg, #70c3e4 0%, #6db7e5 100%);
-    --info-color: #a8edea;
-    --info-gradient: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+    --primary-color: #6366f1;
+    --primary-gradient: linear-gradient(135deg, #d7d8ed 0%, #bbddeb 100%);
+    --secondary-color: #06b6d4;
+    --secondary-gradient: linear-gradient(135deg, #a0eaf7 0%, #93d6e6 100%);
+    --success-color: #10b981;
+    --success-gradient: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    --warning-color: #e2c99c;
+    --warning-gradient: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    --danger-color: #d5c5c5;
+    --danger-gradient: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    --info-color: #3b82f6;
+    --info-gradient: linear-gradient(135deg, #c9d2e1 0%, #cad5f3 100%);
 
-    --dark-bg: #1a1d29;
-    --card-bg: #64b0ea;
-    --text-primary: #2d3748;
-    --text-secondary: #718096;
+    --dark-bg: #0f172a;
+    --card-bg: #ffffff;
+    --text-primary: #1e293b;
+    --text-secondary: #64748b;
     --border-color: #e2e8f0;
-    --shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-    --shadow-hover: 0 20px 40px rgba(0, 0, 0, 0.15);
+    --shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    --shadow-hover: 0 8px 30px rgba(0, 0, 0, 0.12);
 
-    --border-radius: 16px;
+    --border-radius: 12px;
     --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -32,11 +31,9 @@
     box-sizing: border-box;
 }
 
-
-
 body {
     font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: linear-gradient(135deg, #d9dcdd 0%, #d6dbdd 100%);
+    background: #f8f9fa;
     min-height: 100vh;
     margin: 0;
     padding: 20px;
@@ -67,16 +64,17 @@ body {
 }
 
 .card-header {
-    background: linear-gradient(135deg, #7b9ec1 0%, #9aaec8 100%);
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
     border-bottom: 1px solid var(--border-color);
     padding: 20px 25px;
     border-radius: var(--border-radius) var(--border-radius) 0 0;
+    color: white;
 }
 
 .card-title {
     font-size: 1.25rem;
     font-weight: 600;
-    color: var(--text-primary);
+    color: white;
     margin: 0;
     display: flex;
     align-items: center;
@@ -84,7 +82,7 @@ body {
 }
 
 .card-title i {
-    color: var(--primary-color);
+    color: rgba(255, 255, 255, 0.9);
     font-size: 1.1em;
 }
 
@@ -138,7 +136,7 @@ body {
 .small-box .inner p {
     font-size: 1rem;
     margin: 0;
-    opacity: 0.9;
+    opacity: 0.95;
     font-weight: 500;
 }
 
@@ -147,13 +145,13 @@ body {
     top: 20px;
     right: 20px;
     font-size: 3rem;
-    color: rgba(152, 196, 241, 0.3);
+    color: rgba(255, 255, 255, 0.3);
     transition: var(--transition);
 }
 
 .small-box:hover .icon {
     transform: scale(1.1);
-    color: rgba(126, 193, 217, 0.5);
+    color: rgba(255, 255, 255, 0.5);
 }
 
 /* تصميم صناديق المعلومات */
@@ -215,7 +213,7 @@ body {
 .table-responsive {
     border-radius: var(--border-radius);
     overflow: hidden;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    box-shadow: var(--shadow);
 }
 
 .table {
@@ -225,11 +223,11 @@ body {
 }
 
 .table thead th {
-    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
     border: none;
     padding: 15px 20px;
     font-weight: 600;
-    color: var(--text-primary);
+    color: white;
     font-size: 0.9rem;
     text-transform: uppercase;
     letter-spacing: 0.5px;
@@ -277,11 +275,11 @@ body {
 
 .badge-info {
     background: var(--info-gradient);
-    color: var(--text-primary);
+    color: white;
 }
 
 .badge-secondary {
-    background: linear-gradient(135deg, #718096 0%, #4a5568 100%);
+    background: linear-gradient(135deg, #64748b 0%, #475569 100%);
     color: white;
 }
 
@@ -304,7 +302,7 @@ body {
 }
 
 .btn-secondary {
-    background: linear-gradient(135deg, #718096 0%, #4a5568 100%);
+    background: linear-gradient(135deg, #64748b 0%, #475569 100%);
     color: white;
 }
 
@@ -355,11 +353,11 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .text-success {
-    color: #10b981 !important;
+    color: var(--success-color) !important;
 }
 
 .text-danger {
-    color: #ef4444 !important;
+    color: var(--danger-color) !important;
 }
 
 /* تحسين الفواصل */
@@ -416,7 +414,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 ::-webkit-scrollbar-track {
-    background: #f1f1f1;
+    background: #f1f5f9;
     border-radius: 4px;
 }
 
@@ -426,7 +424,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: #d8daf1;
+    background: var(--secondary-color);
 }
 
 /* تأثيرات إضافية للتفاعل */
@@ -456,27 +454,25 @@ body::before {
     width: 100%;
     height: 100%;
     background:
-        radial-gradient(circle at 20% 80%, rgba(237, 242, 245, 0.3) 0%, transparent 50%),
-        radial-gradient(circle at 80% 20%, rgba(244, 243, 252, 0.3) 0%, transparent 50%),
-        radial-gradient(circle at 40% 40%, rgba(185, 221, 234, 0.3) 0%, transparent 50%);
+        radial-gradient(circle at 20% 80%, rgba(99, 102, 241, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(139, 92, 246, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 40% 40%, rgba(6, 182, 212, 0.1) 0%, transparent 50%);
     z-index: -1;
     pointer-events: none;
 }
-
-
 
 /* أنماط إضافية للتحسينات الجديدة */
 
 /* تحسين البطاقات الخاصة */
 .header-card {
-    background: linear-gradient(135deg, #b5d3ef 0%, #cce2f8 100%);
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
     color: white;
     margin-bottom: 30px;
 }
 
 .header-card .card-header {
     background: transparent;
-    border-bottom: 1px solid rgba(163, 209, 241, 0.2);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .header-card .card-title,
@@ -505,7 +501,7 @@ body::before {
 }
 
 .alert-card {
-    border-left: 4px solid #ef4444;
+    border-left: 4px solid var(--danger-color);
 }
 
 /* تحسين عناصر التحكم */
@@ -551,7 +547,7 @@ body::before {
 }
 
 .chart-stats {
-    background: #f8fafc;
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
     border-radius: 8px;
     padding: 15px;
 }
@@ -561,7 +557,7 @@ body::before {
     justify-content: space-between;
     align-items: center;
     padding: 8px 0;
-    border-bottom: 1px solid #e2e8f0;
+    border-bottom: 1px solid var(--border-color);
 }
 
 .stat-mini:last-child {
@@ -579,7 +575,7 @@ body::before {
 }
 
 .chart-summary {
-    background: #f8fafc;
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
     border-radius: 8px;
     padding: 15px;
 }
@@ -612,9 +608,9 @@ body::before {
 }
 
 .modern-table thead th {
-    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
     font-weight: 600;
-    color: var(--text-primary);
+    color: white;
     border: none;
     padding: 15px 20px;
 }
@@ -658,25 +654,25 @@ body::before {
 }
 
 .rank-badge.rank-1 {
-    background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+    background: linear-gradient(135deg, #ffd700 0%, #ffb347 100%);
     color: #1a1d29;
     box-shadow: 0 4px 8px rgba(255, 215, 0, 0.3);
 }
 
 .rank-badge.rank-2 {
-    background: linear-gradient(135deg, #c0c0c0 0%, #e5e5e5 100%);
+    background: linear-gradient(135deg, #c0c0c0 0%, #a8a8a8 100%);
     color: #1a1d29;
     box-shadow: 0 4px 8px rgba(192, 192, 192, 0.3);
 }
 
 .rank-badge.rank-3 {
-    background: linear-gradient(135deg, #cd7f32 0%, #daa520 100%);
+    background: linear-gradient(135deg, #cd7f32 0%, #b8860b 100%);
     color: white;
     box-shadow: 0 4px 8px rgba(205, 127, 50, 0.3);
 }
 
 .rank-badge:not(.rank-1):not(.rank-2):not(.rank-3) {
-    background: linear-gradient(135deg, #718096 0%, #4a5568 100%);
+    background: linear-gradient(135deg, #64748b 0%, #475569 100%);
 }
 
 .count-badge {
@@ -738,7 +734,7 @@ body::before {
 }
 
 .success-state {
-    background: linear-gradient(135deg, #f0fff4 0%, #e6fffa 100%);
+    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
     border-radius: 8px;
 }
 
@@ -827,7 +823,7 @@ body::before {
 /* تحسين الصفوف المتأخرة */
 .overdue-row {
     background: linear-gradient(135deg, #fef2f2 0%, #fef7f7 100%);
-    border-left: 3px solid #ef4444;
+    border-left: 3px solid var(--danger-color);
 }
 
 .overdue-row:hover {
@@ -847,13 +843,13 @@ body::before {
     padding: 20px;
     background: white;
     border-radius: 12px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    box-shadow: var(--shadow);
     transition: var(--transition);
 }
 
 .stat-item:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-hover);
 }
 
 .stat-icon {
@@ -895,6 +891,7 @@ body::before {
     color: var(--text-secondary);
     font-size: 0.9rem;
 }
+
 
 /* تحسين الاستجابة للأجهزة المحمولة */
 @media (max-width: 768px) {
