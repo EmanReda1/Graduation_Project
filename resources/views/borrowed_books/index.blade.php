@@ -55,12 +55,14 @@
                         <tbody>
                             @foreach($borrowedBooks as $book)
                                 @php
-                                    $latestBorrowRequest = App\Models\BookRequest::where("book_id", $book->id)
+                                    $latestBorrowRequest = App\Models\BookRequest::where("book_id", $book->book_id)
                                                                 ->where("type", "borrowing")
                                                                 ->where("status", "approved")
                                                                 ->latest("date_of_request")
                                                                 ->first();
-                                    $borrower = $latestBorrowRequest ? $latestBorrowRequest->student : null;
+
+                                    $borrower = $latestBorrowRequest ? $latestBorrowRequest->student: null;
+
                                 @endphp
                                 <tr>
                                     <td>
@@ -69,7 +71,7 @@
                                     <td>{{ $book->book_name }}</td>
                                     <td>
                                         @if($borrower)
-                                            <a href="{{ route("students.show", $borrower->id) }}">
+                                            <a href="{{ route("students.show", $borrower->student_id) }}">
                                                 {{ $borrower->fullname }}
                                             </a>
                                         @else

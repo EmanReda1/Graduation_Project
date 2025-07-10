@@ -21,8 +21,11 @@ class BorrowedBooksController extends Controller
      */
     public function index(Request $request)
     {
+        //$books = Book::all();
+
         // Only show books that are currently borrowed (status = 'borrowed')
         $query = Book::where('status', 'borrowed');
+       // dd($query);
 
         // Apply filters
         if ($request->filled('department')) {
@@ -44,6 +47,7 @@ class BorrowedBooksController extends Controller
         $query->orderBy($sortField, $sortDirection);
 
         $borrowedBooks = $query->paginate(15);
+
 
         foreach ($borrowedBooks as $book) {
             // Get the most recent approved borrowing request for this book
@@ -71,6 +75,7 @@ class BorrowedBooksController extends Controller
 
         // Get unique departments for filter dropdown
         $departments = Book::select('department')->distinct()->pluck('department');
+       //dd($borrowedBooks);
 
         return view('borrowed_books.index', compact('borrowedBooks', 'departments'));
     }
