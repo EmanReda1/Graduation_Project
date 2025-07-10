@@ -25,7 +25,7 @@ class BorrowedBooksController extends Controller
 
         // Only show books that are currently borrowed (status = 'borrowed')
         $query = Book::where('status', 'borrowed');
-       // dd($query);
+        // dd($query);
 
         // Apply filters
         if ($request->filled('department')) {
@@ -34,10 +34,10 @@ class BorrowedBooksController extends Controller
 
         if ($request->filled('search')) {
             $search = $request->search;
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('book_name', 'like', "%{$search}%")
-                  ->orWhere('author', 'like', "%{$search}%")
-                  ->orWhere('isbn', 'like', "%{$search}%");
+                    ->orWhere('author', 'like', "%{$search}%")
+                    ->orWhere('isbn', 'like', "%{$search}%");
             });
         }
 
@@ -51,11 +51,11 @@ class BorrowedBooksController extends Controller
 
         foreach ($borrowedBooks as $book) {
             // Get the most recent approved borrowing request for this book
-            $latestBorrowRequest = BookRequest::where('book_id', $book->id)
-                                            ->where('type', 'borrowing')
-                                            ->where('status', 'approved')
-                                            ->latest('date_of_request')
-                                            ->first();
+            $latestBorrowRequest = $book->requests()
+                ->where('type', 'borrowing')
+                ->where('status', 'approved')
+                ->orderBy('date_of_request', 'desc')
+                ->first();
 
             // Initialize as null first
             $book->return_request_pending = null;
@@ -63,19 +63,19 @@ class BorrowedBooksController extends Controller
             // Only check for return request if we have a valid borrow request
             if ($latestBorrowRequest) {
                 $book->return_request_pending = RetrieveRequest::where('request_id', $latestBorrowRequest->request_id)
-                                                                    ->where('status', 'pending')
-                                                                    ->first();
+                    ->where('status', 'pending')
+                    ->first();
             }
 
             $book->extension_request_pending = BookRequest::where('book_id', $book->id)
-                                                    ->where('type', 'extension')
-                                                    ->where('status', 'pending')
-                                                    ->first();
+                ->where('type', 'extension')
+                ->where('status', 'pending')
+                ->first();
         }
 
         // Get unique departments for filter dropdown
         $departments = Book::select('department')->distinct()->pluck('department');
-       //dd($borrowedBooks);
+        //dd($borrowedBooks);
 
         return view('borrowed_books.index', compact('borrowedBooks', 'departments'));
     }
@@ -112,14 +112,14 @@ class BorrowedBooksController extends Controller
         $book->return_request_pending = null;
         if ($borrowRequest) {
             $book->return_request_pending = RetrieveRequest::where("request_id", $borrowRequest->request_id)
-                                                            ->where("status", "pending")
-                                                            ->first();
+                ->where("status", "pending")
+                ->first();
         }
 
         $book->extension_request_pending = BookRequest::where('book_id', $book->id)
-                                                ->where('type', 'extension')
-                                                ->where('status', 'pending')
-                                                ->first();
+            ->where('type', 'extension')
+            ->where('status', 'pending')
+            ->first();
 
         return view('borrowed_books.show', compact('book', 'borrower', 'borrowRequest'));
     }
@@ -148,8 +148,8 @@ class BorrowedBooksController extends Controller
             }
 
             $retrieveRequest = RetrieveRequest::where('request_id', $borrowRequest->request_id)
-                                            ->where('status', 'pending')
-                                            ->firstOrFail();
+                ->where('status', 'pending')
+                ->firstOrFail();
 
             // Update the retrieve request status
             $retrieveRequest->status = 'approved';
@@ -200,8 +200,8 @@ class BorrowedBooksController extends Controller
             }
 
             $retrieveRequest = RetrieveRequest::where('request_id', $borrowRequest->request_id)
-                                            ->where('status', 'pending')
-                                            ->firstOrFail();
+                ->where('status', 'pending')
+                ->firstOrFail();
 
             // Update the retrieve request status
             $retrieveRequest->status = 'rejected';
@@ -234,9 +234,9 @@ class BorrowedBooksController extends Controller
             $book = Book::findOrFail($bookId);
 
             $extensionRequest = BookRequest::where('book_id', $book->id)
-                                            ->where('type', 'extension')
-                                            ->where('status', 'pending')
-                                            ->firstOrFail();
+                ->where('type', 'extension')
+                ->where('status', 'pending')
+                ->firstOrFail();
 
             // Update the request status
             $extensionRequest->status = 'approved';
@@ -272,9 +272,9 @@ class BorrowedBooksController extends Controller
             $book = Book::findOrFail($bookId);
 
             $extensionRequest = BookRequest::where('book_id', $book->id)
-                                            ->where('type', 'extension')
-                                            ->where('status', 'pending')
-                                            ->firstOrFail();
+                ->where('type', 'extension')
+                ->where('status', 'pending')
+                ->firstOrFail();
 
             // Update the request status
             $extensionRequest->status = 'rejected';
@@ -305,31 +305,31 @@ class BorrowedBooksController extends Controller
         $search = $request->get('search');
 
         $borrowedBooks = Book::where('status', 'borrowed')
-            ->where(function($q) use ($search) {
+            ->where(function ($q) use ($search) {
                 $q->where('book_name', 'like', "%{$search}%")
-                  ->orWhere('author', 'like', "%{$search}%")
-                  ->orWhere('isbn', 'like', "%{$search}%");
+                    ->orWhere('author', 'like', "%{$search}%")
+                    ->orWhere('isbn', 'like', "%{$search}%");
             })
             ->paginate(15);
 
         foreach ($borrowedBooks as $book) {
             $latestBorrowRequest = BookRequest::where('book_id', $book->id)
-                                            ->where('type', 'borrowing')
-                                            ->where('status', 'approved')
-                                            ->latest('date_of_request')
-                                            ->first();
+                ->where('type', 'borrowing')
+                ->where('status', 'approved')
+                ->latest('date_of_request')
+                ->first();
 
             $book->return_request_pending = null;
             if ($latestBorrowRequest) {
                 $book->return_request_pending = RetrieveRequest::where('request_id', $latestBorrowRequest->request_id)
-                                                                ->where('status', 'pending')
-                                                                ->first();
+                    ->where('status', 'pending')
+                    ->first();
             }
 
             $book->extension_request_pending = BookRequest::where('book_id', $book->id)
-                                                    ->where('type', 'extension')
-                                                    ->where('status', 'pending')
-                                                    ->first();
+                ->where('type', 'extension')
+                ->where('status', 'pending')
+                ->first();
         }
 
         // Get unique departments for filter dropdown
@@ -353,22 +353,22 @@ class BorrowedBooksController extends Controller
 
         foreach ($borrowedBooks as $book) {
             $latestBorrowRequest = BookRequest::where('book_id', $book->id)
-                                            ->where('type', 'borrowing')
-                                            ->where('status', 'approved')
-                                            ->latest('date_of_request')
-                                            ->first();
+                ->where('type', 'borrowing')
+                ->where('status', 'approved')
+                ->latest('date_of_request')
+                ->first();
 
             $book->return_request_pending = null;
             if ($latestBorrowRequest) {
                 $book->return_request_pending = RetrieveRequest::where('request_id', $latestBorrowRequest->request_id)
-                                                                ->where('status', 'pending')
-                                                                ->first();
+                    ->where('status', 'pending')
+                    ->first();
             }
 
             $book->extension_request_pending = BookRequest::where('book_id', $book->id)
-                                                    ->where('type', 'extension')
-                                                    ->where('status', 'pending')
-                                                    ->first();
+                ->where('type', 'extension')
+                ->where('status', 'pending')
+                ->first();
         }
 
         // Get unique departments for filter dropdown
@@ -400,22 +400,22 @@ class BorrowedBooksController extends Controller
 
         foreach ($borrowedBooks as $book) {
             $latestBorrowRequest = BookRequest::where('book_id', $book->id)
-                                            ->where('type', 'borrowing')
-                                            ->where('status', 'approved')
-                                            ->latest('date_of_request')
-                                            ->first();
+                ->where('type', 'borrowing')
+                ->where('status', 'approved')
+                ->latest('date_of_request')
+                ->first();
 
             $book->return_request_pending = null;
             if ($latestBorrowRequest) {
                 $book->return_request_pending = RetrieveRequest::where('request_id', $latestBorrowRequest->request_id)
-                                                                ->where('status', 'pending')
-                                                                ->first();
+                    ->where('status', 'pending')
+                    ->first();
             }
 
             $book->extension_request_pending = BookRequest::where('book_id', $book->id)
-                                                    ->where('type', 'extension')
-                                                    ->where('status', 'pending')
-                                                    ->first();
+                ->where('type', 'extension')
+                ->where('status', 'pending')
+                ->first();
         }
 
         // Get unique departments for filter dropdown
@@ -424,4 +424,3 @@ class BorrowedBooksController extends Controller
         return view('borrowed_books.index', compact('borrowedBooks', 'departments', 'student'));
     }
 }
-
