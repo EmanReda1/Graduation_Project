@@ -79,12 +79,13 @@ class BorrowedBooksController extends Controller
      * Display the specified borrowed book details.
      * This is an admin-only view.
      *
-     * @param  \App\Models\Book  $book
+     * @param  int  $id
      * @return \Illuminate\Http\Response
      */
     public function show($id)
     {
-         $book = Book::findOrFail($id);
+        $book = Book::findOrFail($id);
+
         // Check if the book is actually borrowed
         if ($book->status !== 'borrowed') {
             return redirect()->route('borrowed-books.index')
@@ -418,3 +419,4 @@ class BorrowedBooksController extends Controller
         return view('borrowed_books.index', compact('borrowedBooks', 'departments', 'student'));
     }
 }
+
