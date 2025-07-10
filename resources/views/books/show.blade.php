@@ -25,7 +25,7 @@
                 <!-- Book Image -->
                 <div class="col-md-4 text-center mb-4">
                     @if($book->image)
-                        <img src="{{ asset($book->image) }}" alt="{{ $book->book_name }}" class="img-fluid rounded" style="max-height: 300px;">
+                        <img src="{{ asset('storage/' . $book->image) }}" alt="{{ $book->book_name }}" class="img-fluid rounded" style="max-height: 300px;">
                     @else
                         <img src="{{ asset('images/no-image.png') }}" alt="No Image" class="img-fluid rounded" style="max-height: 300px;">
                     @endif
