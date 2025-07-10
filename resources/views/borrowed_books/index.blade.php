@@ -74,20 +74,20 @@
                                     <td>
                                         <!-- Librarian actions for return/extension requests -->
                                         @if($book->return_request_pending)
-                                            <form action="{{ route("borrowed-books.approve-return", $book->id) }}" method="POST" style="display:inline;">
+                                            <form action="{{ route("borrowed-books.approve-return", $book->book_id) }}" method="POST" style="display:inline;">
                                                 @csrf
                                                 <button type="submit" class="btn btn-sm btn-success">قبول الإرجاع</button>
                                             </form>
-                                            <form action="{{ route("borrowed-books.reject-return", $book->id) }}" method="POST" style="display:inline;">
+                                            <form action="{{ route("borrowed-books.reject-return", $book->book_id) }}" method="POST" style="display:inline;">
                                                 @csrf
                                                 <button type="submit" class="btn btn-sm btn-danger">رفض الإرجاع</button>
                                             </form>
                                         @elseif($book->extension_request_pending)
-                                            <form action="{{ route("borrowed-books.approve-extension", $book->id) }}" method="POST" style="display:inline;">
+                                            <form action="{{ route("borrowed-books.approve-extension", $book->book_id) }}" method="POST" style="display:inline;">
                                                 @csrf
                                                 <button type="submit" class="btn btn-sm btn-success">قبول التمديد</button>
                                             </form>
-                                            <form action="{{ route("borrowed-books.reject-extension", $book->id) }}" method="POST" style="display:inline;">
+                                            <form action="{{ route("borrowed-books.reject-extension", $book->book_id) }}" method="POST" style="display:inline;">
                                                 @csrf
                                                 <button type="submit" class="btn btn-sm btn-danger">رفض التمديد</button>
                                             </form>
