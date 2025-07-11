@@ -106,7 +106,7 @@ class ReadingRequestController extends Controller
             // Add notification to student
             Notification::create([
                 "student_id" => $request->student_id,
-                "message" => "تم قبول طلب قراءة الكتاب " . $request->book->book_name . ". الكتاب متاح للقراءة في المكان: " . ($readingRequest->book->place ?? 'غير محدد') . "، الرف: " . ($readingRequest->book->shelf_no ?? 'غير محدد') . ".",
+                "message" => "تم قبول طلب قراءة الكتاب " . $request->book->book_name . ". الكتاب متاح للقراءة في المكان: " . ($request->book->place ?? 'غير محدد') . "، الرف: " . ($request->book->shelf_no ?? 'غير محدد') . ".",
                 "type" => "reading_approved",
                 "is_read" => false,
                 "date_time" => now(),
