@@ -72,7 +72,7 @@ class BookDepartmentController extends Controller
             }
 
             // تشغيل الـ Python script
-            $command = "python3 \"{$pythonScript}\" {$bookName} {$bookSummary} 2>&1";
+            $command = "python \"{$pythonScript}\" {$bookName} {$bookSummary} 2>&1";
             $output = shell_exec($command);
 
             if ($output && !str_contains($output, 'Error:')) {
