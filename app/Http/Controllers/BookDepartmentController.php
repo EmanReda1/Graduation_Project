@@ -72,7 +72,7 @@ class BookDepartmentController extends Controller
             }
 
             // تشغيل الـ Python script
-            $command = "python \"{$pythonScript}\" {$bookName} {$bookSummary} 2>&1";
+             $command = "/usr/bin/python3 \"{$pythonScript}\" {$bookName} {$bookSummary} 2>&1"; // <--- Use absolute path here
             $output = shell_exec($command);
 
             if ($output && !str_contains($output, 'Error:')) {
