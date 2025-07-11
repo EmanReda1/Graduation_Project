@@ -62,3 +62,29 @@
       --> rev
       
   4.10 statistics
+
+
+5- machine:
+
+ --> فولدر فيه كل الفايلاز 
+     mkdir ml_api
+     cd ml_api
+  
+
+--> pip install -r requirements.txt (libraries)
+
+-->  script 
+
+--> laravelcontroller عشان اهندل الكلام ده واستخدم  shell_exec
+
+-->test: cd ml_api
+         python predict_department.py "Harry Potter" "A young wizard story" 
+         
+        يعني المودل مظبوط cs  طلع 
+
+-->> هيطبق على الكنترولر الجاهز اللي عندي: store function , update 
+
+--> update form view (create w edit books)
+
+--> routes 
+

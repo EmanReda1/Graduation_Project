@@ -37,3 +37,6 @@ app.component('example-component', ExampleComponent);
  */
 
 app.mount('#app');
+
+import './book_prediction';
+

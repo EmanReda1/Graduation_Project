@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\VisitController;
 use App\Http\Controllers\Api\ProjectController;
 use App\Http\Controllers\Api\ExamController;
 use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\BookDepartmentController;
 
 /*
 |--------------------------------------------------------------------------
@@ -215,6 +216,15 @@ Route::prefix("v1")->group(function () {
         });
     });
 });
+
+// API للتنبؤ بالقسم (الطريقة المطلوبة)
+Route::post('/predict-department', [BookDepartmentController::class, 'predictDepartmentCLI']);
+
+// API للتنبؤ عبر Flask (بديل)
+Route::post('/predict-department-api', [BookDepartmentController::class, 'predictDepartment']);
+
+// اختبار إعدادات Python
+Route::get('/check-python', [BookDepartmentController::class, 'checkPythonSetup']);
 
     // api.php
 

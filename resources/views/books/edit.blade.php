@@ -1,4 +1,4 @@
-<!-- resources/views/books/edit.blade.php -->
+
 @extends('layouts.app')
 @push('styles')
     <link href="{{ asset('css/visits.css') }}" rel="stylesheet">
@@ -72,14 +72,60 @@
                             @enderror
                         </div>
 
+                        <!-- Enhanced Department Section with ML Prediction -->
                         <div class="mb-3">
-                            <label for="department" class="form-label">القسم <span class="text-danger">*</span></label>
+                            <label for="department" class="form-label">
+                                القسم
+                                <span class="text-danger">*</span>
+                                <button type="button" id="predict-btn" class="btn btn-sm btn-outline-primary ms-2" title="إعادة توقع القسم باستخدام الذكاء الاصطناعي">
+                                    <i class="fas fa-magic"></i> إعادة توقع القسم
+                                </button>
+                            </label>
+
+                            <!-- Current Department Info -->
+                            <div class="mb-2">
+                                <small class="text-muted">
+                                    <i class="fas fa-info-circle"></i>
+                                    القسم الحالي: <strong>{{ $book->department }}</strong>
+                                </small>
+                            </div>
+
+                            <!-- Prediction Status -->
+                            <div id="prediction-status" class="mb-2" style="display: none;">
+                                <div class="alert alert-info d-flex align-items-center" role="alert">
+                                    <div class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></div>
+                                    <div>جاري إعادة توقع القسم المناسب...</div>
+                                </div>
+                            </div>
+
+                            <!-- Prediction Result -->
+                            <div id="prediction-result" class="mb-2" style="display: none;">
+                                <div class="alert alert-success d-flex align-items-center justify-content-between" role="alert">
+                                    <div>
+                                        <i class="fas fa-check-circle me-2"></i>
+                                        <strong>القسم المتوقع:</strong> <span id="predicted-department"></span>
+                                    </div>
+                                    <div>
+                                        <button type="button" id="accept-prediction" class="btn btn-sm btn-success me-1">قبول</button>
+                                        <button type="button" id="dismiss-prediction" class="btn btn-sm btn-outline-secondary">تجاهل</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Prediction Error -->
+                            <div id="prediction-error" class="mb-2" style="display: none;">
+                                <div class="alert alert-warning" role="alert">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                    <span id="error-message">فشل في توقع القسم. يرجى اختيار القسم يدوياً.</span>
+                                </div>
+                            </div>
+
                             <select class="form-select @error('department') is-invalid @enderror" id="department" name="department" required>
                                 <option value="">اختر القسم</option>
                                 @foreach($departments as $dept)
                                     <option value="{{ $dept }}" {{ old('department', $book->department) == $dept ? 'selected' : '' }}>{{ $dept }}</option>
                                 @endforeach
-                                <option value="other">قسم آخر</option>
+                                <option value="other" {{ old('department', $book->department) == 'other' ? 'selected' : '' }}>قسم آخر</option>
                             </select>
                             @error('department')
                                 <div class="invalid-feedback">{{ $message }}</div>
@@ -179,21 +225,5 @@
     </div>
 </div>
 
-@section('scripts')
-<script>
-    // Show/hide other department field based on selection
-    document.getElementById('department').addEventListener('change', function() {
-        if (this.value === 'other') {
-            document.getElementById('other_department_div').style.display = 'block';
-        } else {
-            document.getElementById('other_department_div').style.display = 'none';
-        }
-    });
 
-    // Check on page load
-    if (document.getElementById('department').value === 'other') {
-        document.getElementById('other_department_div').style.display = 'block';
-    }
-</script>
-@endsection
 @endsection

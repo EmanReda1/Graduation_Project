@@ -1,4 +1,4 @@
-<!-- resources/views/books/create.blade.php -->
+
 @extends('layouts.app')
 @push('styles')
     <link href="{{ asset('css/visits.css') }}" rel="stylesheet">
@@ -71,8 +71,43 @@
                             @enderror
                         </div>
 
+                        <!-- Enhanced Department Section with ML Prediction -->
                         <div class="mb-3">
-                            <label for="department" class="form-label">القسم <span class="text-danger">*</span></label>
+                            <label for="department" class="form-label">
+                                القسم
+                                <span class="text-danger">*</span>
+                                <button type="button" id="predict-btn" class="btn btn-sm btn-outline-primary ms-2" title="توقع القسم باستخدام الذكاء الاصطناعي">
+                                    <i class="fas fa-magic"></i> توقع القسم
+                                </button>
+                            </label>
+
+                            <!-- Prediction Status -->
+                            <div id="prediction-status" class="mb-2" style="display: none;">
+                                <div class="alert alert-info d-flex align-items-center" role="alert">
+                                    <div class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></div>
+                                    <div>جاري توقع القسم المناسب...</div>
+                                </div>
+                            </div>
+
+                            <!-- Prediction Result -->
+                            <div id="prediction-result" class="mb-2" style="display: none;">
+                                <div class="alert alert-success d-flex align-items-center justify-content-between" role="alert">
+                                    <div>
+                                        <i class="fas fa-check-circle me-2"></i>
+                                        <strong>القسم المتوقع:</strong> <span id="predicted-department"></span>
+                                    </div>
+                                    <button type="button" id="accept-prediction" class="btn btn-sm btn-success">قبول</button>
+                                </div>
+                            </div>
+
+                            <!-- Prediction Error -->
+                            <div id="prediction-error" class="mb-2" style="display: none;">
+                                <div class="alert alert-warning" role="alert">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                    <span id="error-message">فشل في توقع القسم. يرجى اختيار القسم يدوياً.</span>
+                                </div>
+                            </div>
+
                             <select class="form-select @error('department') is-invalid @enderror" id="department" name="department" required>
                                 <option value="">اختر القسم</option>
                                 @foreach($departments as $dept)
@@ -172,16 +207,4 @@
     </div>
 </div>
 
-@section('scripts')
-<script>
-    // Show/hide other department field based on selection
-    document.getElementById('department').addEventListener('change', function() {
-        if (this.value === 'other') {
-            document.getElementById('other_department_div').style.display = 'block';
-        } else {
-            document.getElementById('other_department_div').style.display = 'none';
-        }
-    });
-</script>
-@endsection
 @endsection

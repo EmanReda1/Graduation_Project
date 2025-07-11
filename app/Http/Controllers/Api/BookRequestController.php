@@ -486,6 +486,11 @@ class BookRequestController extends Controller
      */
     private function sendRequestStatusNotification($bookRequest, $status, $librarianNotes = null)
     {
+
+        $book = Book::find($bookRequest->book_id);
+        $place = $book->place ?? 'غير محدد';
+        $shelf = $book->shelf_no ?? 'غير محدد';
+
         $bookName = $bookRequest->book->book_name ?? 'غير معروف';
         $requestType = $bookRequest->type === 'reading' ? 'قراءة' : 'استعارة';
 
@@ -495,37 +500,37 @@ class BookRequestController extends Controller
                     $message = "تم قبول طلب استعارة الكتاب \"$bookName\". الكتاب متاح للاستعارة يمكن الاستلام خلال 24 ساعة من تاريخ الموافقة.";
                     $type = 'borrowing_approved';
                 } else {
-                    $message = "تم قبول طلب قراءة الكتاب \"$bookName\". الكتاب متاح للقراءة في المكان: " . ($bookRequest->book->place ?? 'غير محدد') . "، الرف: " . ($bookRequest->book->shelf_no ?? 'غير محدد') . ".";
+                    $message = "تم قبول طلب قراءة الكتاب \"$bookName\". الكتاب متاح للقراءة في المكان: " . ($place ?? 'غير محدد') . "، الرف: " . ($shelf ?? 'غير محدد') . ".";
                     $type = 'reading_approved';
                 }
                 break;
 
-           case 'rejected':
-    $message = "تم رفض طلب $requestType الكتاب \"$bookName\".";
-    if ($librarianNotes) {
-        $message .= " السبب: $librarianNotes";
-    } else {
-        // Default rejection notes based on request type
-        if ($bookRequest->type === 'reading') {
-            $message .= " ملاحظة: الكتاب سيتوفر خلال اليوم.";
-        } elseif ($bookRequest->type === 'borrowing') {
-            // البحث عن طلب الاستعارة المقبول للكتاب
-            $activeBorrowingRequest = BookRequest::where('book_id', $bookRequest->book_id)
-                ->where('type', 'borrowing')
-                ->where('status', 'approved')
-                ->orderBy('updated_at', 'desc')
-                ->first();
+            case 'rejected':
+                $message = "تم رفض طلب $requestType الكتاب \"$bookName\".";
+                if ($librarianNotes) {
+                    $message .= " السبب: $librarianNotes";
+                } else {
+                    // Default rejection notes based on request type
+                    if ($bookRequest->type === 'reading') {
+                        $message .= " ملاحظة: الكتاب سيتوفر خلال اليوم.";
+                    } elseif ($bookRequest->type === 'borrowing') {
+                        // البحث عن طلب الاستعارة المقبول للكتاب
+                        $activeBorrowingRequest = BookRequest::where('book_id', $bookRequest->book_id)
+                            ->where('type', 'borrowing')
+                            ->where('status', 'approved')
+                            ->orderBy('updated_at', 'desc')
+                            ->first();
 
-            if ($activeBorrowingRequest) {
-                $expectedAvailableDate = $activeBorrowingRequest->updated_at->addDays(3)->format('d/m/Y');
-                $message .= " ملاحظة: الكتاب سيتوفر في تاريخ $expectedAvailableDate.";
-            } else {
-                $message .= " ملاحظة: الكتاب سيتوفر خلال 3 أيام.";
-            }
-        }
-    }
-    $type = $bookRequest->type . '_rejected';
-    break;
+                        if ($activeBorrowingRequest) {
+                            $expectedAvailableDate = $activeBorrowingRequest->updated_at->addDays(3)->format('d/m/Y');
+                            $message .= " ملاحظة: الكتاب سيتوفر في تاريخ $expectedAvailableDate.";
+                        } else {
+                            $message .= " ملاحظة: الكتاب سيتوفر خلال 3 أيام.";
+                        }
+                    }
+                }
+                $type = $bookRequest->type . '_rejected';
+                break;
 
 
             default:

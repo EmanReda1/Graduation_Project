@@ -5,9 +5,18 @@ namespace App\Http\Controllers;
 use App\Models\Book;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use App\Http\Controllers\BookDepartmentController; // Import the ML controller
+use Illuminate\Support\Facades\Log;
 
 class BookController extends Controller
 {
+
+    protected $bookDepartmentController;
+
+    public function __construct(BookDepartmentController $bookDepartmentController)
+    {
+        $this->bookDepartmentController = $bookDepartmentController;
+    }
     /**
      * Display a listing of the books.
      *
@@ -88,6 +97,26 @@ class BookController extends Controller
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
+        // Predict department using the CLI method
+        $mlRequest = Request::create(
+            '/predict-department-cli',
+            'POST',
+            [
+                'book_name' => $request->input('book_name'),
+                'book_summary' => $request->input('summary')
+            ]
+        );
+
+        $mlResponse = $this->bookDepartmentController->predictDepartmentCLI($mlRequest);
+        $mlResult = json_decode($mlResponse->getContent(), true);
+
+        if (isset($mlResult['success']) && $mlResult['success']) {
+            $validated['department'] = $mlResult['predicted_department'];
+        } else {
+            Log::error('ML Department CLI Prediction Failed: ' . ($mlResult['error'] ?? 'Unknown error'));
+            $validated['department'] = $request->input('department', 'General');
+        }
+
         // Handle image upload
         if ($request->hasFile('image')) {
             // Use Laravel Storage - أسهل وأأمن
@@ -162,6 +191,40 @@ class BookController extends Controller
             'library_date' => 'required|date',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
+
+                if ($request->isMethod('PUT') || $request->isMethod('PATCH')) {
+            $shouldPredict = false;
+            if ($request->input('book_name') !== $book->book_name || $request->input('summary') !== $book->summary) {
+                $shouldPredict = true;
+            }
+
+            if (!$request->has('department') && !$shouldPredict) {
+                $shouldPredict = true;
+            }
+
+            if ($shouldPredict) {
+                $mlRequest = Request::create(
+                    '/predict-department-cli',
+                    'POST',
+                    [
+                        'book_name' => $request->input('book_name'),
+                        'book_summary' => $request->input('summary')
+                    ]
+                );
+
+                $mlResponse = $this->bookDepartmentController->predictDepartmentCLI($mlRequest);
+                $mlResult = json_decode($mlResponse->getContent(), true);
+
+                if (isset($mlResult['success']) && $mlResult['success']) {
+                    $validated['department'] = $mlResult['predicted_department'];
+                } else {
+                    Log::error('ML Department CLI Prediction Failed during update: ' . ($mlResult['error'] ?? 'Unknown error'));
+                    $validated['department'] = $book->department;
+                }
+            } else {
+                $validated['department'] = $request->input('department', $book->department);
+            }
+        }
 
         // Handle image upload
         if ($request->hasFile('image')) {

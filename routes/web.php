@@ -15,6 +15,7 @@ use App\Http\Controllers\BorrowingRequestController;
 use App\Http\Controllers\StatisticsController;
 use App\Http\Controllers\ExamController;
 use App\Http\Controllers\RetrieveRequestController;
+use App\Http\Controllers\BookDepartmentController;
 
 Route::get("/", function () {
     return view("auth.login");
@@ -24,6 +25,10 @@ Route::get("/", function () {
 Auth::routes();
 
 Route::get("/home", [App\Http\Controllers\HomeController::class, "index"])->name("home");
+
+//ml
+Route::post('/predict-department-cli', [BookDepartmentController::class, 'predictDepartmentCLI'])
+    ->name('predict.department.cli');
 
 // Book routes
 Route::resource("books", BookController::class);
@@ -138,3 +143,14 @@ Route::post("/borrowed-books/{id}/approve-return", [BorrowedBooksController::cla
 Route::post("/borrowed-books/{id}/reject-return", [BorrowedBooksController::class, "rejectReturn"])->name("borrowed-books.reject-return");
 Route::post("/borrowed-books/{id}/approve-extension", [BorrowedBooksController::class, "approveExtension"])->name("borrowed-books.approve-extension");
 Route::post("/borrowed-books/{id}/reject-extension", [BorrowedBooksController::class, "rejectExtension"])->name("borrowed-books.reject-extension");
+
+
+
+
+
+//for test
+Route::get('/book-prediction', function () {
+    return view('book-prediction');
+});
+
+Route::post('/book-prediction', [BookDepartmentController::class, 'predictDepartment']);
