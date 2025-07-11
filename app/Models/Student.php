@@ -78,6 +78,12 @@ class Student extends Authenticatable implements JWTSubject
         return [];
     }
 
+
+    public function chatMessages()
+    {
+        return $this->hasMany(Chat::class, 'student_id', 'student_id');
+    }
+
     /**
      * Get public attributes only (for librarian access).
      *

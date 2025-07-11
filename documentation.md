@@ -88,3 +88,10 @@
 
 --> routes 
 
+
+
+6- chat 
+  ----> models: user,student,chat,librarian
+  ----> chat controller
+  ---> views 
+

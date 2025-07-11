@@ -45,4 +45,10 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    public function sentLibrarianMessages()
+    {
+
+        return $this->hasMany(Chat::class, 'librarian_id', 'id');
+    }
 }

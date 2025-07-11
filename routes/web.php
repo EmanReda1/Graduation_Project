@@ -16,6 +16,7 @@ use App\Http\Controllers\StatisticsController;
 use App\Http\Controllers\ExamController;
 use App\Http\Controllers\RetrieveRequestController;
 use App\Http\Controllers\BookDepartmentController;
+use App\Http\Controllers\ChatController;
 
 Route::get("/", function () {
     return view("auth.login");
@@ -29,6 +30,8 @@ Route::get("/home", [App\Http\Controllers\HomeController::class, "index"])->name
 //ml
 Route::post('/predict-department-cli', [BookDepartmentController::class, 'predictDepartmentCLI'])
     ->name('predict.department.cli');
+
+
 
 // Book routes
 Route::resource("books", BookController::class);
@@ -124,7 +127,6 @@ Route::prefix("statistics")->name("statistics.")->group(function () {
     Route::get("/requests", [StatisticsController::class, "requests"])->name("requests");
     Route::get("/projects", [StatisticsController::class, "projects"])->name("projects");
     Route::get("/exams", [StatisticsController::class, "exams"])->name("exams");
-
 });
 
 
@@ -154,3 +156,7 @@ Route::get('/book-prediction', function () {
 });
 
 Route::post('/book-prediction', [BookDepartmentController::class, 'predictDepartment']);
+
+
+Route::get('/chat', [ChatController::class, 'index'])->name('chat.index');
+Route::get('/{student_id}', [ChatController::class, 'show'])->name('chat.show');

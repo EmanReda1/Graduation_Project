@@ -42,7 +42,7 @@
 
             <div class="header-right">
 
-                <a href="{{-- route('chat.index') ?? '#' --}}" class="header-link">
+                <a href="{{route('chat.index') ?? '#' }}" class="header-link">
                     <div class="chat">
                         <span>المحادثات</span>
                         <i class="fa-regular fa-comment"></i>
