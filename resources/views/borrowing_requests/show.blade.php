@@ -168,82 +168,85 @@
 
                                     {{-- ورقة ختم النسر --}}
                                     <div class="col-md-6">
-                                        <h6 class="fw-bold">ورقة ختم النسر:</h6>
-                                        @if (isset($studentDocuments['eagle_seal']) && !empty($studentDocuments['eagle_seal']))
-                                            <a href="{{ Storage::url($studentDocuments['eagle_seal']) }}"
-                                                class="btn btn-sm btn-outline-primary" target="_blank">
+                                        <div class="card">
+                                            <div class="card-header bg-light">
+                                                <h6 class="mb-0">
+                                                    <i class="fas fa-id-card text-primary"></i>
+                                                    ورقة ختم النسر:
+                                                </h6>
+                                            </div>
+                                            <div class="card-body">
+                                                @if (isset($studentDocuments['eagle_seal']) && !empty($studentDocuments['eagle_seal']))
 
-                                                @if (str_ends_with($studentDocuments['eagle_seal'], '.pdf'))
-                                                    <i class="fas fa-file-pdf"></i> عرض ملف PDF
+                                                    <a href="{{ Storage::url($studentDocuments['eagle_seal']) }}"
+                                                        class="btn btn-sm btn-outline-primary" target="_blank">
+                                                        <i class="fas fa-eye"></i> عرض ورقة ختم النسر
+                                                    </a>
+                                                    <br>
+
+                                                    <img src="{{ Storage::url($studentDocuments['eagle_seal']) }}"
+                                                        alt="ورقة ختم النسر" style="max-width: 200px; margin-top: 10px;">
+                                                    <small class="text-muted d-block mt-1">
+                                                        {{ basename($studentDocuments['eagle_seal']) }}
+                                                    </small>
                                                 @else
-                                                    <i class="fas fa-eye"></i> عرض الصورة
+                                                    <span class="text-muted">
+                                                        <i class="fas fa-times-circle text-danger"></i>
+                                                        غير متوفرة
+                                                    </span>
                                                 @endif
-                                            </a>
-                                            <br>
+                                            </div>
+                                        </div>
+                                    </div>
 
-                                            @if (!str_ends_with($studentDocuments['eagle_seal'], '.pdf'))
-                                                <img src="{{ Storage::url($studentDocuments['eagle_seal']) }}"
-                                                    alt="ورقة ختم النسر" style="max-width: 200px; margin-top: 10px;">
-                                            @endif
-                                            <small class="text-muted d-block mt-1">
-                                                {{ basename($studentDocuments['eagle_seal']) }}
-                                            </small>
-                                        @else
-                                            <span class="text-muted">
-                                                <i class="fas fa-times-circle text-danger"></i>
-                                                غير متوفرة
+                                    {{-- حالة الأوراق --}}
+                                    <div class="alert alert-info mt-3">
+                                        <h6 class="alert-heading">
+                                            <i class="fas fa-info-circle"></i>
+                                            حالة الأوراق:
+                                        </h6>
+                                        @php
+                                            $hasIdCard =
+                                                isset($studentDocuments['id_card']) &&
+                                                !empty($studentDocuments['id_card']);
+                                            $hasEagleSeal =
+                                                isset($studentDocuments['eagle_seal']) &&
+                                                !empty($studentDocuments['eagle_seal']);
+                                            $allComplete = $hasIdCard && $hasEagleSeal;
+                                        @endphp
+
+                                        @if ($allComplete)
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-check-circle"></i>
+                                                جميع الأوراق متوفرة
                                             </span>
+                                        @else
+                                            <span class="badge bg-warning">
+                                                <i class="fas fa-exclamation-triangle"></i>
+                                                أوراق ناقصة
+                                            </span>
+                                            <small class="d-block mt-1">
+                                                الأوراق المفقودة:
+                                                @if (!$hasIdCard)
+                                                    صورة البطاقة
+                                                @endif
+                                                @if (!$hasIdCard && !$hasEagleSeal)
+                                                    ،
+                                                @endif
+                                                @if (!$hasEagleSeal)
+                                                    ورقة ختم النسر
+                                                @endif
+                                            </small>
                                         @endif
                                     </div>
-                                </div>
-
-                                {{-- حالة الأوراق --}}
-                                <div class="alert alert-info mt-3">
-                                    <h6 class="alert-heading">
-                                        <i class="fas fa-info-circle"></i>
-                                        حالة الأوراق:
-                                    </h6>
-                                    @php
-                                        $hasIdCard =
-                                            isset($studentDocuments['id_card']) && !empty($studentDocuments['id_card']);
-                                        $hasEagleSeal =
-                                            isset($studentDocuments['eagle_seal']) &&
-                                            !empty($studentDocuments['eagle_seal']);
-                                        $allComplete = $hasIdCard && $hasEagleSeal;
-                                    @endphp
-
-                                    @if ($allComplete)
-                                        <span class="badge bg-success">
-                                            <i class="fas fa-check-circle"></i>
-                                            جميع الأوراق متوفرة
-                                        </span>
-                                    @else
-                                        <span class="badge bg-warning">
+                                @else
+                                    <div class="alert alert-warning">
+                                        <h6 class="alert-heading">
                                             <i class="fas fa-exclamation-triangle"></i>
-                                            أوراق ناقصة
-                                        </span>
-                                        <small class="d-block mt-1">
-                                            الأوراق المفقودة:
-                                            @if (!$hasIdCard)
-                                                صورة البطاقة
-                                            @endif
-                                            @if (!$hasIdCard && !$hasEagleSeal)
-                                                ،
-                                            @endif
-                                            @if (!$hasEagleSeal)
-                                                ورقة ختم النسر
-                                            @endif
-                                        </small>
-                                    @endif
-                                </div>
-                            @else
-                                <div class="alert alert-warning">
-                                    <h6 class="alert-heading">
-                                        <i class="fas fa-exclamation-triangle"></i>
-                                        لا توجد أوراق مرفقة
-                                    </h6>
-                                    <p class="mb-0">لم يقم الطالب برفع أي أوراق مطلوبة للاستعارة.</p>
-                                </div>
+                                            لا توجد أوراق مرفقة
+                                        </h6>
+                                        <p class="mb-0">لم يقم الطالب برفع أي أوراق مطلوبة للاستعارة.</p>
+                                    </div>
                             @endif
                         </div>
                     </div>
