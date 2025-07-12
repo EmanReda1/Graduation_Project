@@ -145,7 +145,7 @@
                                         </div>
                                         <div class="card-body">
                                             @if(isset($studentDocuments["id_card"]) && !empty($studentDocuments["id_card"]))
-                                                <a href="{{ asset("storage/" . $studentDocuments["id_card"]) }}"
+                                                <a href="{{ Storage::url ($studentDocuments["id_card"]) }}"
                                                    class="btn btn-sm btn-outline-primary"
                                                    target="_blank">
                                                     <i class="fas fa-eye"></i>
@@ -175,7 +175,7 @@
                                         </div>
                                         <div class="card-body">
                                             @if(isset($studentDocuments["eagle_seal"]) && !empty($studentDocuments["eagle_seal"]))
-                                                <a href="{{ asset("storage/" . $studentDocuments["eagle_seal"]) }}"
+                                                <a href="{{ Storage::url ( $studentDocuments["eagle_seal"]) }}"
                                                    class="btn btn-sm btn-outline-primary"
                                                    target="_blank">
                                                     <i class="fas fa-file-pdf"></i>
