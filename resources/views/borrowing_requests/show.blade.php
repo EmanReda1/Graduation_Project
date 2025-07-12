@@ -153,6 +153,9 @@
                                                         <i class="fas fa-eye"></i>
                                                         عرض صورة البطاقة
                                                     </a>
+                                                    <br>
+                                                    <img src="{{ Storage::url($studentDocuments['id_card']) }}"
+                                                        alt="صورة البطاقة" style="max-width: 200px; margin-top: 10px;">
                                                     <small class="text-muted d-block mt-1">
                                                         {{ basename($studentDocuments['id_card']) }}
                                                     </small>
@@ -177,13 +180,11 @@
                                             </div>
                                             <div class="card-body">
                                                 @if (isset($studentDocuments['eagle_seal']) && !empty($studentDocuments['eagle_seal']))
-
                                                     <a href="{{ Storage::url($studentDocuments['eagle_seal']) }}"
                                                         class="btn btn-sm btn-outline-primary" target="_blank">
                                                         <i class="fas fa-eye"></i> عرض ورقة ختم النسر
                                                     </a>
                                                     <br>
-
                                                     <img src="{{ Storage::url($studentDocuments['eagle_seal']) }}"
                                                         alt="ورقة ختم النسر" style="max-width: 200px; margin-top: 10px;">
                                                     <small class="text-muted d-block mt-1">
