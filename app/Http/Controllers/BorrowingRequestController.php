@@ -37,9 +37,8 @@ class BorrowingRequestController extends Controller
         if ($request->filled("status")) {
             $query->where("status", $request->status);
         } else {
-            // Default filter: show pending, approved (reserved), and delivered requests
-            // Exclude rejected and cancelled requests by default
-            $query->whereIn("status", ["pending", "approved", "delivered"]);
+            // Default filter: show pending, approved (reserved)]
+            $query->whereIn("status", ["pending", "approved"]);
         }
 
         if ($request->filled("start_date") && $request->filled("end_date")) {
