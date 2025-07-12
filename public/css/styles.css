@@ -98,6 +98,7 @@ a {
     z-index: 1000;
     overflow-y: auto;
     padding-top: 70px;
+    margin-top: 20px;
 }
 
 .side-menu.active {
