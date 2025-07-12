@@ -56,7 +56,8 @@
                                                 @elseif($exam->type == 'midterm') badge-warning
                                                 @elseif($exam->type == 'quiz') badge-info
                                                 @elseif($exam->type == 'assignment') badge-success
-                                                @else badge-secondary @endif">
+                                                @else badge-secondary @endif"
+                                                style="background-color: #6c757d !important; color: white !important;">
                                     {{ $exam->type_in_arabic }}
                                 </span>
                             </td>
